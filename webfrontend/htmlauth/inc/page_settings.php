@@ -31,7 +31,7 @@ $providers = pt_providers($describe);
                 <?= pt_h($enabled ? pt_label($L, 'SOURCE.' . strtoupper(str_replace('+', '_', $section['data_source']))) : $L['HEALTH.DISABLED']) ?>
                 <?= $cred === 'missing' && $enabled ? ' – ' . pt_h($L['CRED.MISSING']) : '' ?></h4>
             <?= pt_render_section($section, $describe, $L, false) ?>
-            <p class="pt-hint"><?= pt_h($section['live_tracking'] ? $L['PROVIDERS.LIVE'] : $L['PROVIDERS.EMAIL_ONLY']) ?></p>
+            <p class="pt-hint"><?= pt_h(($section['source_note'] ?? '') ?: ($section['live_tracking'] ? $L['PROVIDERS.LIVE'] : $L['PROVIDERS.EMAIL_ONLY'])) ?></p>
             <?php if ($section['supports_test']): ?>
                 <button type="submit" name="action" value="test:<?= pt_h($id) ?>"
                         class="ui-btn ui-btn-inline ui-mini ui-icon-check ui-btn-icon-left"><?= pt_h($L['SETTINGS.TEST_PROVIDER']) ?></button>

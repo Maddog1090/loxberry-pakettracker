@@ -3,6 +3,7 @@
 Live-Tracking: DHL "Shipment Tracking – Unified" API (developer.dhl.com, kostenloser API-Key).
   GET https://api-eu.dhl.com/track/shipments?trackingNumber=…&language=de[&recipientPostalCode=…]
   Header "DHL-API-Key: <Consumer Key aus My Apps>"
+  Termin: estimatedTimeOfDelivery bzw. estimatedDeliveryTimeFrame (estimatedFrom/estimatedThrough)
   Kostenloser Zugang: 250 Abfragen/Tag, höchstens 1 Abfrage alle 5 Sekunden (sonst HTTP 429).
   Fehler kommen als application/problem+json (RFC 7807: title, detail, status).
 Ankündigungen: Benachrichtigungsmails von DHL / Deutsche Post.
@@ -22,7 +23,7 @@ from ..schema import Field
 from ..sources.mail import Mail
 from . import checkdigits
 from .apibase import ApiProvider, throttle_fields
-from .base import ProviderError, status_from_keywords
+from .base import ProviderError, local_window, status_from_keywords
 from .mailparse import parse_carrier_email
 
 # Für den Verbindungstest: gültiges Format, existiert aber nicht → DHL antwortet mit 404
@@ -182,12 +183,19 @@ class DhlProvider(ApiProvider):
             if isinstance(e, dict)
         ]
         eta = data.get("estimatedTimeOfDelivery")
+        eta = eta[:10] if isinstance(eta, str) else ""
+        frame = data.get("estimatedDeliveryTimeFrame")
+        window = ""
+        if isinstance(frame, dict):
+            day, window = local_window(str(frame.get("estimatedFrom") or ""), str(frame.get("estimatedThrough") or ""))
+            eta = day or eta
         return Shipment(
             provider=cls.id,
             tracking_number=tracking_number,
             status=status,
             status_text=text,
-            eta=eta[:10] if isinstance(eta, str) else "",
+            eta=eta,
+            eta_window=window if status != Status.DELIVERED else "",
             # Ohne Zeitstempel keine Statusübernahme – sonst würde "unbekannt" bessere Daten überschreiben
             last_update=st.get("timestamp") or "",
             events=events,

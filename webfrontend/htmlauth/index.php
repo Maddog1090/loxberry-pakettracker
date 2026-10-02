@@ -81,6 +81,8 @@ LBWeb::lbheader($L['COMMON.TITLE'] . " " . LBSystem::pluginversion(), "", "help.
 ?>
 <style>
     .pt-hint { font-size: 0.85em; color: #777; margin: -0.4em 0 1em 0; }
+    .pt-small { font-size: 0.85em; color: #555; }
+    .pt-events { margin: 0.3em 0 0 0; padding-left: 1.2em; }
     .pt-msg { padding: 0.6em 1em; border-radius: 4px; margin-bottom: 1em; }
     .pt-msg.ok { background: #e6f4ea; color: #1e5631; }
     .pt-msg.error { background: #fdecea; color: #8a1c1c; }

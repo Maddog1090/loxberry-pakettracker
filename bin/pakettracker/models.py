@@ -92,6 +92,7 @@ class Shipment:
     status: Status = Status.UNKNOWN
     status_text: str = ""
     eta: str = ""  # YYYY-MM-DD oder leer
+    eta_window: str = ""  # Zustellzeitfenster in Ortszeit, z.B. "10:00–14:00" (nur zusammen mit eta)
     last_update: str = ""  # Zeitstempel der letzten Statusinformation
     delivered_at: str = ""
     first_seen: str = ""
@@ -112,7 +113,7 @@ class Shipment:
     def reset_status(self) -> None:
         """Verwirft Statusdaten (z.B. simulierte aus dem Testmodus), Identität und Herkunft bleiben."""
         self.status = Status.UNKNOWN
-        self.status_text = self.eta = self.last_update = self.delivered_at = ""
+        self.status_text = self.eta = self.eta_window = self.last_update = self.delivered_at = ""
         self.events = []
 
     def merge(self, other: Shipment) -> None:
@@ -125,7 +126,7 @@ class Shipment:
         if other.reference and not self.reference:
             self.reference = other.reference
         if other.eta and not self.eta:  # ein (älterer) Termin ist besser als keiner
-            self.eta = other.eta
+            self.eta, self.eta_window = other.eta, other.eta_window
 
         mine, theirs = parse_ts(self.last_update), parse_ts(other.last_update)
         if theirs is None or (mine is not None and theirs < mine):
@@ -134,7 +135,7 @@ class Shipment:
         self.status_text = other.status_text
         self.last_update = other.last_update
         if other.eta:
-            self.eta = other.eta
+            self.eta, self.eta_window = other.eta, other.eta_window
         if other.events:
             self.events = list(other.events)
         if self.status == Status.DELIVERED and not self.delivered_at:
@@ -151,6 +152,7 @@ class Shipment:
             "status_label": self.status.label,
             "status_text": self.status_text,
             "eta": self.eta,
+            "eta_window": self.eta_window,
             "last_update": self.last_update,
             "delivered_at": self.delivered_at,
             "first_seen": self.first_seen,
@@ -168,6 +170,7 @@ class Shipment:
             status=Status.from_key(data.get("status")),
             status_text=data.get("status_text", ""),
             eta=data.get("eta", ""),
+            eta_window=data.get("eta_window", ""),
             last_update=data.get("last_update", ""),
             delivered_at=data.get("delivered_at", ""),
             first_seen=data.get("first_seen", ""),

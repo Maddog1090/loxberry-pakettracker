@@ -18,10 +18,11 @@ def _sort_key(s: Shipment) -> tuple:
 def _slot(index: int, s: Shipment | None) -> dict:
     if s is None:
         return {"slot": index, "used": 0, "provider": "", "tracking_number": "", "description": "",
-                "status": "", "status_code": 0, "status_label": "", "status_text": "", "eta": ""}
+                "status": "", "status_code": 0, "status_label": "", "status_text": "", "eta": "", "eta_window": ""}
     return {"slot": index, "used": 1, "provider": s.provider, "tracking_number": s.tracking_number,
             "description": s.description, "status": s.status.key, "status_code": int(s.status),
-            "status_label": s.status.label, "status_text": s.status_text, "eta": s.eta}
+            "status_label": s.status.label, "status_text": s.status_text, "eta": s.eta,
+            "eta_window": s.eta_window}
 
 
 def build(shipments: list[Shipment], provider_ids: list[str], slots: int, mock_mode: bool,

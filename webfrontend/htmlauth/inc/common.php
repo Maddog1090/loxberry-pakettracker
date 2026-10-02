@@ -138,6 +138,17 @@ function pt_fmt_time($iso): string
     return $ts ? date('d.m.Y H:i', $ts) : '–';
 }
 
+/** Termin als "05.10.2026 10:00–14:00" (Zeitfenster nur, wenn bekannt). */
+function pt_fmt_eta(array $item): string
+{
+    $eta = (string)($item['eta'] ?? '');
+    if (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $eta, $m)) {
+        return $eta;
+    }
+    $window = trim((string)($item['eta_window'] ?? ''));
+    return "$m[3].$m[2].$m[1]" . ($window !== '' ? " $window" : '');
+}
+
 /** Zugangsdatenstatus aus describe (Geheimnisse selbst kommen nie im Browser an). */
 function pt_credentials_status(array $section, array $describe): string
 {

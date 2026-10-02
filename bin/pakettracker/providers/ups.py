@@ -5,6 +5,7 @@ github.com/UPS-API/api-documentation: OAuthClientCredentials.yaml, Tracking.yaml
   1. Token:  POST <base>/security/v1/oauth/token  (Basic-Auth Client-ID:Secret,
              grant_type=client_credentials) → access_token, expires_in
   2. Status: GET  <base>/api/track/v1/details/{inquiryNumber}?locale=de_DE
+             (Termin: package.deliveryDate[], Zeitfenster: package.deliveryTime.startTime/endTime)
              Header: Authorization: Bearer …, transId (eindeutig), transactionSrc
   base = https://onlinetools.ups.com (Produktion) bzw. https://wwwcie.ups.com (Testumgebung)
 Der Token bleibt nur im Arbeitsspeicher des jeweiligen Laufs.
@@ -55,6 +56,21 @@ _TEXT_RULES = (
 def _iso_date(value: object) -> str:
     text = str(value or "")
     return f"{text[:4]}-{text[4:6]}-{text[6:8]}" if re.fullmatch(r"\d{8}", text) else ""
+
+
+def _hhmm(value: object) -> str:
+    text = str(value or "")
+    return f"{text[:2]}:{text[2:4]}" if re.fullmatch(r"\d{4}(\d{2})?", text) and text[:4] != "0000" else ""
+
+
+def _window(delivery_time: object) -> str:
+    """deliveryTime (startTime/endTime als HHMMSS, Ortszeit des Empfängers) → "10:30–14:00" bzw. "bis 12:00"."""
+    if not isinstance(delivery_time, dict):
+        return ""
+    start, end = _hhmm(delivery_time.get("startTime")), _hhmm(delivery_time.get("endTime"))
+    if start and end and start < end:
+        return f"{start}–{end}"
+    return f"bis {end}" if end else ""
 
 
 def _activity_ts(activity: dict) -> str:
@@ -256,6 +272,7 @@ class UpsProvider(ApiProvider):
             status=status,
             status_text=text,
             eta=eta or "",
+            eta_window=_window(package.get("deliveryTime")) if eta and status != Status.DELIVERED else "",
             last_update=_activity_ts(activities[0]) if activities else "",
             events=events,
         )

@@ -60,9 +60,9 @@ Paketstatus ändern sich selten. Ein Cronjob (`cron/cron.05min`) ist robuster al
 | DHL | Shipment Tracking – Unified (`GET api-eu.dhl.com/track/shipments`, Header `DHL-API-Key`) | ja (dhl.de, deutschepost.de) | API für jeden registrierbar |
 | UPS | Tracking API (OAuth Client Credentials, `onlinetools.ups.com`) | ja (ups.com) | API für jeden mit UPS-Konto registrierbar |
 | Amazon | – | ja (amazon.de/.com, konfigurierbar) | Selling Partner API nur für Verkäufer |
-| Hermes | – | ja (myhermes.de, hermesworld.com) | HSI/Business-Portal nur für Vertragskunden |
-| DPD | – | ja (dpd.de, dpd.com) | Webservices nur für Geschäftskunden mit Vertrag |
-| GLS | – | ja (gls-pakete.de, gls-group.eu/.com) | Track&Trace-API nur mit MyGLS-Versenderkonto |
+| Hermes | optional, standardmäßig aus: Sendungsverfolgung von myhermes.de (`GET api.my-deliveries.de/tnt/v2/shipments/search/{nr}`, ohne Key, nicht offiziell dokumentiert) | ja (myhermes.de, hermesworld.com) | offizielles HSI/Business-Portal nur für Vertragskunden |
+| DPD | – | ja (dpd.de, dpd.com) | Webservices nur für Geschäftskunden mit Vertrag; öffentliche Sendungsverfolgung verlangt PLZ-/Datenschutz-Bestätigung im Browser |
+| GLS | – | ja (gls-pakete.de, gls-group.eu/.com) | Track&Trace-API nur mit MyGLS-Versenderkonto; frühere offene Schnittstelle leitet auf die API-Registrierung um |
 | FedEx, TNT | vorbereitet (FedEx Track API wäre möglich) | ja | standardmäßig aus |
 
 Der E-Mail-Eingang ist damit für vier der sechs Anbieter die einzige rechtlich saubere Quelle.

@@ -4,6 +4,19 @@ Alle nennenswerten Änderungen am Plugin. Format nach [Keep a Changelog](https:/
 
 > Die Versionen bis einschließlich 0.2.2 entstanden am 2026-10-02 während der Entwicklung und wurden nicht öffentlich veröffentlicht. Die Datumsangaben sind die Build-Daten. 0.2.2 ist die erste zur Veröffentlichung vorgesehene Version.
 
+## [1.0.0] – 2026-10-02
+
+Erste stabile Version: MQTT-Topics, Status-Codes 0–7 und REST-Felder gelten ab jetzt als feste Schnittstelle.
+
+### Hinzugefügt
+- Hermes: optionale **Live-Abfrage** über die Sendungsverfolgung von myhermes.de (Einstellungen → Hermes → *Live-Abfrage über myhermes.de*, standardmäßig aus). Liefert Status, Originaltext, Verlauf und Zustellzeitfenster auch ohne Benachrichtigungsmail – z.B. für manuell eingetragene Nummern. Ohne Zugangsdaten; die Schnittstelle ist öffentlich, aber nicht offiziell dokumentiert. Drosselung wie bei DHL/UPS (Mindestabstand je Sendung, Tageslimit), Verbindungstest.
+- Neues Feld **Zustellzeitfenster** `eta_window` (z.B. `10:00–14:00`, Ortszeit): in Sendungsliste, Slots, MQTT (`slot/<n>/eta_window`) und REST. Befüllt von Hermes (Live), DHL (`estimatedDeliveryTimeFrame`) und UPS (`deliveryTime`).
+- Sendungsliste: Originaltext des Paketdienstes direkt unter dem Status und aufklappbarer Sendungsverlauf.
+
+### Geändert
+- Termine werden in der Oberfläche als TT.MM.JJJJ angezeigt (MQTT/REST unverändert JJJJ-MM-TT).
+- Zustand je Anbieter: Die Datenquelle berücksichtigt, ob eine optionale Live-Abfrage eingeschaltet ist.
+
 ## [0.2.3] – 2026-10-02
 
 ### Hinzugefügt

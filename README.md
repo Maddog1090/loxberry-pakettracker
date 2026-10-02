@@ -2,7 +2,7 @@
 
 **Paketverfolgung für Loxone:** Pakettracker sammelt Ankündigungen und Sendungsstatus von **DHL, Amazon, Hermes, DPD, GLS und UPS** und stellt sie dem Loxone Miniserver über **MQTT** (und optional REST) bereit – z.B. für „Heute kommt ein Paket“ in der Loxone-App oder eine Erinnerung, ein Paket abzuholen.
 
-**Version 0.2.3** · LoxBerry ≥ 3.0 (getestet mit 4.0) · Autor: ToRe90 · [MIT-Lizenz](LICENSE)
+**Version 1.0.0** · LoxBerry ≥ 3.0 (getestet mit 4.0) · Autor: ToRe90 · [MIT-Lizenz](LICENSE)
 
 📖 **Ausführliche Anleitung (Deutsch): [docs/ANLEITUNG_DE.md](docs/ANLEITUNG_DE.md)** – auf dem LoxBerry unter Plugin → **Hilfe** → **Ausführliche Anleitung öffnen**.
 
@@ -15,12 +15,12 @@
 | **DHL** | Offizielle API + E-Mail | kostenloser API-Key (developer.dhl.com) und/oder E-Mail-Eingang |
 | **UPS** | Offizielle API (OAuth) + E-Mail | kostenlose Client-ID + Secret (developer.ups.com) und/oder E-Mail-Eingang |
 | **Amazon** | E-Mail (IMAP) | E-Mail-Eingang |
-| **Hermes** | E-Mail (IMAP) | E-Mail-Eingang |
+| **Hermes** | E-Mail (IMAP) + optionale Live-Abfrage (myhermes.de, inoffiziell) | E-Mail-Eingang und/oder Live-Abfrage einschalten |
 | **DPD** | E-Mail (IMAP) | E-Mail-Eingang |
 | **GLS** | E-Mail (IMAP) | E-Mail-Eingang |
 | FedEx, TNT | E-Mail (vorbereitet, standardmäßig aus) | E-Mail-Eingang |
 
-Amazon, Hermes, DPD und GLS bieten Privatkunden keine offizielle Tracking-API. Pakettracker nutzt deshalb deren Benachrichtigungsmails – **kein Screen-Scraping, keine Login-Automatisierung, nur offizielle Wege.**
+Amazon, Hermes, DPD und GLS bieten Privatkunden keine offizielle Tracking-API. Pakettracker nutzt deshalb deren Benachrichtigungsmails – **kein Screen-Scraping, keine Login-Automatisierung.** Einzige Ausnahme, standardmäßig aus: Für Hermes lässt sich die öffentliche, aber nicht offiziell dokumentierte JSON-Schnittstelle der myhermes.de-Sendungsverfolgung einschalten (ohne Login, es wird nur die Sendungsnummer übertragen). Sie liefert Status, Verlauf und Zustellzeitfenster, kann sich aber jederzeit ändern.
 
 ## Funktionen
 
@@ -99,7 +99,7 @@ Beispiele: [Anleitung, Abschnitt 19](docs/ANLEITUNG_DE.md#19-einbindung-in-loxon
 
 ## Bekannte Einschränkungen
 
-- Amazon, Hermes, DPD, GLS nur über E-Mail – ohne Benachrichtigungsmail kein Status; weitergeleitete Mails werden nicht erkannt.
+- Amazon, DPD, GLS nur über E-Mail – ohne Benachrichtigungsmail kein Status (Hermes ebenso, solange die Live-Abfrage aus ist); weitergeleitete Mails werden nicht erkannt.
 - 12- und 14-stellige Nummern sind mehrdeutig (DHL/GLS bzw. Hermes/DPD) – dann Anbieter manuell wählen.
 - Kostenloser DHL-Zugang: 250 Abfragen pro Tag (ca. 10 aktive Sendungen bei 60 Minuten Abstand).
 - Leere MQTT-Werte werden nach MQTT-Standard nicht im Broker gespeichert.

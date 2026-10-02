@@ -186,3 +186,17 @@ def test_environment_urls():
         provider = UpsProvider({"environment": env}, False, logging.getLogger("t"))
         provider.BASE_URL = ""
         assert provider._base() == url
+
+
+@pytest.mark.parametrize("delivery_time,window", [
+    ({"type": "EDW", "startTime": "103000", "endTime": "140000"}, "10:30–14:00"),
+    ({"type": "CMT", "endTime": "120000"}, "bis 12:00"),
+    ({"type": "EOD", "startTime": "", "endTime": ""}, ""),
+    (None, ""),
+])
+def test_delivery_time_window(delivery_time, window):
+    package = ups_track()["trackResponse"]["shipment"][0]["package"][0]
+    if delivery_time is not None:
+        package["deliveryTime"] = delivery_time
+    shipment = UpsProvider.map_package(package, NUMBER)
+    assert (shipment.eta, shipment.eta_window) == ("2026-10-05", window)

@@ -1,6 +1,6 @@
 # Pakettracker für LoxBerry – Benutzeranleitung
 
-Version 0.2.3 · Autor: ToRe90 · Kontakt: existenzz-cod2@gmx.de
+Version 1.0.0 · Autor: ToRe90 · Kontakt: existenzz-cod2@gmx.de
 
 Diese Anleitung richtet sich an Anwender, die das Plugin einrichten und nutzen möchten. Programmierkenntnisse sind nicht nötig. Für einige Schritte (Logs per SSH, Backup) sind Grundkenntnisse im Umgang mit dem LoxBerry hilfreich.
 
@@ -49,12 +49,12 @@ Unterstützte Paketdienste:
 | **DHL** | Offizielle DHL-Schnittstelle (API) und DHL-Benachrichtigungsmails | Einen kostenlosen DHL-API-Key und/oder den E-Mail-Eingang |
 | **UPS** | Offizielle UPS-Schnittstelle (API) und UPS-Benachrichtigungsmails | Kostenlose UPS-Zugangsdaten (Client-ID und Secret) und/oder den E-Mail-Eingang |
 | **Amazon** | Versand- und Zustellmails von Amazon | E-Mail-Eingang |
-| **Hermes** | Benachrichtigungsmails von Hermes | E-Mail-Eingang |
+| **Hermes** | Benachrichtigungsmails von Hermes, optional Live-Abfrage über die Sendungsverfolgung von myhermes.de | E-Mail-Eingang und/oder *Live-Abfrage* einschalten |
 | **DPD** | Benachrichtigungsmails von DPD | E-Mail-Eingang |
 | **GLS** | Benachrichtigungsmails von GLS | E-Mail-Eingang |
 | FedEx, TNT | Benachrichtigungsmails (vorbereitet, standardmäßig ausgeschaltet) | E-Mail-Eingang |
 
-**Warum nicht überall eine Schnittstelle?** Amazon, Hermes, DPD und GLS bieten Privatkunden keine offizielle Schnittstelle zur Sendungsverfolgung an. Das Plugin nutzt bewusst nur offizielle und rechtlich saubere Wege. Es meldet sich nicht auf Webseiten an und liest keine Webseiten aus. Für diese Paketdienste wertet es stattdessen die Benachrichtigungsmails aus, die Sie ohnehin bekommen.
+**Warum nicht überall eine Schnittstelle?** Amazon, Hermes, DPD und GLS bieten Privatkunden keine offizielle Schnittstelle zur Sendungsverfolgung an. Das Plugin nutzt bewusst nur offizielle und rechtlich saubere Wege. Es meldet sich nicht auf Webseiten an und liest keine Webseiten aus. Für diese Paketdienste wertet es stattdessen die Benachrichtigungsmails aus, die Sie ohnehin bekommen. Einzige Ausnahme ist die **optionale Hermes-Live-Abfrage** (standardmäßig aus, siehe [Abschnitt 13](#13-hermes-einrichten)).
 
 **So arbeitet das Plugin:** Alle paar Minuten (Standard: alle 15 Minuten)
 1. liest es neue Paketmails aus Ihrem Postfach,
@@ -78,10 +78,10 @@ Fällt ein Paketdienst oder das Postfach aus, arbeiten alle anderen Teile normal
 
 ## 3. Installation
 
-1. Laden Sie die Datei `pakettracker-<Version>.zip` herunter (z.B. `pakettracker-0.2.3.zip`). **Entpacken Sie sie nicht.**
+1. Laden Sie die Datei `pakettracker-<Version>.zip` herunter (z.B. `pakettracker-1.0.0.zip`). **Entpacken Sie sie nicht.**
 2. Öffnen Sie die LoxBerry-Weboberfläche und gehen Sie zu **Plugin-Verwaltung**.
 3. Wählen Sie unter *Plugin installieren oder aktualisieren* die ZIP-Datei aus und klicken Sie auf **Installieren**.
-4. Warten Sie, bis die Installation abgeschlossen ist. Im Installationsprotokoll sollten am Ende Meldungen mit **OK** stehen, z.B. „Pakettracker 0.2.3 installiert“.
+4. Warten Sie, bis die Installation abgeschlossen ist. Im Installationsprotokoll sollten am Ende Meldungen mit **OK** stehen, z.B. „Pakettracker 1.0.0 installiert“.
    - Erscheint eine **Warnung** zu `python3-paho-mqtt`, konnte das MQTT-Modul nicht installiert werden. Das Plugin funktioniert trotzdem, nur ohne MQTT. Siehe [Fehlersuche](#22-logs-und-fehlersuche).
 5. Das Plugin erscheint jetzt in der Plugin-Liste. Ein Klick darauf öffnet die Plugin-Oberfläche.
 
@@ -360,7 +360,19 @@ Amazon bietet für Kunden keine Schnittstelle zur Sendungsverfolgung an. Das Plu
 
 ## 13. Hermes einrichten
 
-Hermes bietet eine Schnittstelle nur für Geschäftskunden mit Vertrag an. Das Plugin wertet deshalb die Hermes-Mails aus.
+Hermes bietet eine offizielle Schnittstelle nur für Geschäftskunden mit Vertrag an. Das Plugin hat deshalb zwei Quellen, die sich ergänzen:
+
+**A) Live-Abfrage über myhermes.de (empfohlen, ohne Zugangsdaten)**
+
+1. Plugin → **Einstellungen** → *Anbieter* → **Hermes**: *Aktiviert* und **Live-Abfrage über myhermes.de** an.
+2. Optional **Speichern & Verbindung testen**.
+3. Sendungsnummer unter **Sendungen** eintragen.
+
+Das Plugin fragt dann dieselbe Schnittstelle ab, die auch die Sendungsverfolgung auf myhermes.de nutzt: Status, Originaltext, Verlauf und das **Zustellzeitfenster** (z.B. „05.10.2026 10:00–14:00“). Übertragen wird nur die Sendungsnummer. Standardmäßig höchstens einmal pro Stunde je Sendung, zugestellte Sendungen gar nicht mehr.
+
+> **Hinweis:** Diese Schnittstelle ist öffentlich, aber von Hermes nicht offiziell dokumentiert. Sie kann sich jederzeit ändern oder gesperrt werden. Dann erscheint unter *Anbieter* ein Fehler, und die Daten kommen weiter aus den Mails (B).
+
+**B) Benachrichtigungsmails**
 
 1. E-Mail-Benachrichtigungen bei Hermes aktivieren: Kundenkonto auf **myhermes.de** anlegen und dort die Benachrichtigungen per E-Mail einschalten. Viele Versender melden die Sendung zusätzlich direkt an Hermes. Dann kommen die Mails automatisch.
 2. E-Mail-Eingang einrichten ([Abschnitt 10](#10-e-mail-eingang-imap-einrichten)).
@@ -482,6 +494,7 @@ Loxone kann keine wechselnden Listen verarbeiten. Deshalb stehen die wichtigsten
 | `pakettracker/slot/1/status_text` | Originaltext des Paketdienstes | `Die Sendung wurde in das Zustellfahrzeug geladen.` |
 | `pakettracker/slot/1/description` | Beschreibung | `USB-C Kabel 2m` |
 | `pakettracker/slot/1/eta` | Termin (JJJJ-MM-TT) | `2026-10-02` |
+| `pakettracker/slot/1/eta_window` | Zustellzeitfenster (Ortszeit), leer wenn unbekannt – derzeit von Hermes (Live-Abfrage), DHL und UPS | `10:00–14:00` |
 | `pakettracker/slot/1/provider` | Paketdienst | `dhl` |
 | `pakettracker/slot/1/tracking_number` | Sendungsnummer | `00340434…` |
 | `pakettracker/slot/1/status` | Status als Schlüsselwort | `out_for_delivery` |
@@ -620,7 +633,7 @@ Mit `&field=…` liefert die API **genau einen Wert**, ohne Feldnamen, ohne JSON
 
 Mögliche Felder:
 - **`q=summary`:** `active`, `announced`, `in_transit`, `out_for_delivery`, `pickup_ready`, `exception`, `delivered_today`, `arriving_today`, `next_eta`
-- **`q=slot&n=<Nummer>`:** `used`, `provider`, `description`, `status_code`, `status`, `status_label`, `status_text`, `eta` (Format JJJJ-MM-TT), `tracking_number`
+- **`q=slot&n=<Nummer>`:** `used`, `provider`, `description`, `status_code`, `status`, `status_label`, `status_text`, `eta` (Format JJJJ-MM-TT), `eta_window` (z.B. `10:00–14:00`), `tracking_number`
 
 Regeln für `format=text`:
 - Die Antwort ist UTF-8-Klartext und endet mit genau einem Zeilenumbruch.
@@ -769,6 +782,8 @@ python3 pakettracker.py test dhl            # DHL-Key testen (verbraucht 1 Abfra
 4. Nach dem Update kurz prüfen: Seite **Anbieter** und **Status → Jetzt aktualisieren**.
 
 Technischer Hintergrund: Der LoxBerry-Installer löscht bei einem Update die Konfigurations- und Datenordner des Plugins. Das Plugin sichert sie deshalb vorher selbst nach `/tmp` und spielt sie nach der Installation zurück. Neue Einstellungen einer neuen Version erhalten automatisch ihre Standardwerte.
+
+**Update auf 1.0.0:** Hermes kann Sendungen jetzt zusätzlich live über die Sendungsverfolgung von myhermes.de abfragen. Dafür unter *Einstellungen → Hermes* die **Live-Abfrage über myhermes.de** einschalten, sie ist standardmäßig aus (siehe [Abschnitt 13](#13-hermes-einrichten)). Neu ist außerdem das Zustellzeitfenster `eta_window` (MQTT, REST, Oberfläche). Bestehende Topics, Felder und Status-Codes bleiben unverändert. Ab 1.0.0 gelten MQTT-Topics, Status-Codes und REST-Felder als feste Schnittstelle.
 
 **Update von 0.2.2 auf 0.2.3:** Neue Einzelwert-Abfragen der REST-API für Loxone und der Abschnitt *Hilfe → Loxone per HTTP/REST*. Bestehende REST-Adressen funktionieren unverändert. Einzige Änderung: Ist die REST-Schnittstelle ausgeschaltet, antwortet sie jetzt mit 403 statt 404. Es ist nichts weiter zu tun.
 

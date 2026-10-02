@@ -73,7 +73,7 @@ class Health:
         else:
             health = "idle"
         return {
-            "source": provider.data_source(),
+            "source": provider.current_source(),
             "credentials": credentials,
             "last_success": last_success,
             "error": error,

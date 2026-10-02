@@ -76,7 +76,7 @@ $summary = $state['summary'] ?? [];
             <td><?= pt_h($slot['provider']) ?></td>
             <td><?= pt_h($slot['description'] ?: $slot['tracking_number']) ?></td>
             <td><?= pt_h($slot['status_label']) ?> <?= $slot['used'] ? '(' . (int)$slot['status_code'] . ')' : '' ?></td>
-            <td><?= pt_h($slot['eta']) ?></td>
+            <td><?= pt_h(pt_fmt_eta($slot)) ?></td>
         </tr>
     <?php endforeach; ?>
 </table>

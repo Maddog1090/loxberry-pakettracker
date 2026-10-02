@@ -85,8 +85,22 @@ function pt_tracking_link(array $providers, string $provider, string $number): s
                 <td><?= pt_h($providers[$s['provider']]['title'] ?? $s['provider']) ?></td>
                 <td><?= pt_tracking_link($providers, $s['provider'], $s['tracking_number']) ?></td>
                 <td><?= pt_h($s['description']) ?></td>
-                <td title="<?= pt_h($s['status_text']) ?>"><?= pt_h($s['status_label']) ?></td>
-                <td><?= pt_h($s['eta']) ?></td>
+                <td>
+                    <?= pt_h($s['status_label']) ?>
+                    <?php if (($s['status_text'] ?? '') !== ''): ?>
+                        <div class="pt-small"><?= pt_h($s['status_text']) ?></div>
+                    <?php endif; ?>
+                    <?php if (!empty($s['events'])): ?>
+                        <details class="pt-small"><summary><?= pt_h(sprintf($L['SHIPMENTS.EVENTS'], count($s['events']))) ?></summary>
+                            <ul class="pt-events">
+                                <?php foreach ($s['events'] as $e): ?>
+                                    <li><?= pt_h(pt_fmt_time($e['timestamp'] ?? '')) ?> – <?= pt_h($e['description'] ?? '') ?><?= ($e['location'] ?? '') !== '' ? ' (' . pt_h($e['location']) . ')' : '' ?></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </details>
+                    <?php endif; ?>
+                </td>
+                <td><?= pt_h(pt_fmt_eta($s)) ?></td>
                 <td><?= pt_h(implode(', ', $s['origins'])) ?></td>
             </tr>
         <?php endforeach; ?>

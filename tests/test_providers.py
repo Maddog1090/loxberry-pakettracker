@@ -6,7 +6,7 @@ import pytest
 from pakettracker import registry
 from pakettracker.models import Status
 from pakettracker.providers.amazon import AmazonProvider
-from pakettracker.providers.base import extract_eta, sender_matches, status_from_keywords
+from pakettracker.providers.base import extract_eta, local_window, sender_matches, status_from_keywords
 from pakettracker.providers.dhl import DhlProvider
 from pakettracker.sources.mail import EmlDirectorySource
 
@@ -97,3 +97,28 @@ def test_dhl_api_mapping():
     assert shipment.status == Status.OUT_FOR_DELIVERY
     assert shipment.eta == "2026-10-02"
     assert shipment.events[0].location == "Musterstadt"
+    assert shipment.eta_window == ""
+
+
+def test_dhl_api_time_frame():
+    data = {
+        "status": {"timestamp": "2026-10-02T09:00:00+02:00", "statusCode": "transit", "description": "unterwegs"},
+        "estimatedTimeOfDelivery": "2026-10-03T14:00:00+02:00",
+        "estimatedDeliveryTimeFrame": {"estimatedFrom": "2026-10-03T10:00:00+02:00",
+                                       "estimatedThrough": "2026-10-03T14:00:00+02:00"},
+    }
+    shipment = DhlProvider.map_api_shipment(data, "00340434000000000001")
+    assert (shipment.eta, shipment.eta_window) == local_window("2026-10-03T10:00:00+02:00",
+                                                               "2026-10-03T14:00:00+02:00")
+    assert "–" in shipment.eta_window
+
+
+@pytest.mark.parametrize("start,end,window", [
+    ("2026-10-05T08:00:00Z", "2026-10-05T12:00:00Z", True),
+    ("2026-10-05T08:00:00Z", "", False),
+    ("2026-10-05T12:00:00Z", "2026-10-05T08:00:00Z", False),   # Ende vor Beginn
+])
+def test_local_window(start, end, window):
+    day, text = local_window(start, end)
+    assert len(day) == 10 and bool(text) == window
+    assert local_window("", end) == ("", "")

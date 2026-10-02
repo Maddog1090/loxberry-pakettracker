@@ -17,7 +17,7 @@ from abc import ABC
 from datetime import date, timedelta
 from typing import ClassVar
 
-from ..models import Shipment, Status, now_iso
+from ..models import Shipment, Status, now_iso, parse_ts
 from ..schema import Field, Section
 from ..sources.mail import Mail
 
@@ -64,6 +64,8 @@ class Provider(ABC):
     supports_test: ClassVar[bool] = False
     # Link zur Sendungsverfolgung beim Anbieter, {number} wird ersetzt
     tracking_url_template: ClassVar[str] = ""
+    # Abweichender Hinweistext zur Datenquelle in den Einstellungen (leer = Standardtext)
+    source_note: ClassVar[str] = ""
 
     def __init__(self, settings: dict, mock: bool, log: logging.Logger, state: dict | None = None):
         self.settings = settings  # inkl. Geheimnisse aus credentials.json
@@ -86,12 +88,21 @@ class Provider(ABC):
                 ("required_secrets", list(cls.required_secrets)),
                 ("supports_test", cls.supports_test),
                 ("tracking_url_template", cls.tracking_url_template),
+                ("source_note", cls.source_note),
             ),
         )
 
     @classmethod
     def data_source(cls) -> str:
-        if cls.live_tracking:
+        return cls._source(cls.live_tracking)
+
+    def current_source(self) -> str:
+        """Wie data_source(), berücksichtigt aber eine per Einstellung abschaltbare Live-Abfrage."""
+        return self._source(self.live_tracking)
+
+    @classmethod
+    def _source(cls, live: bool) -> str:
+        if live:
             return "api+email" if cls.email_domains else "api"
         return "email"
 
@@ -240,6 +251,21 @@ def extract_eta(text: str, reference: date) -> str:
         if found:
             return min(found)[1].isoformat()
     return ""
+
+
+def local_window(start: str, end: str) -> tuple[str, str]:
+    """Zeitfenster aus zwei ISO-Zeitstempeln → (Datum, "HH:MM–HH:MM") in Ortszeit des LoxBerry.
+
+    Ohne gültigen Beginn: ("", ""). Ohne gültiges Ende oder über Mitternacht: nur das Datum.
+    """
+    begin, finish = parse_ts(start), parse_ts(end)
+    if begin is None:
+        return "", ""
+    begin = begin.astimezone()
+    day = begin.date().isoformat()
+    if finish is None or finish.astimezone().date() != begin.date() or finish <= begin:
+        return day, ""
+    return day, f"{begin:%H:%M}–{finish.astimezone():%H:%M}"
 
 
 _MOCK_FLOW = (Status.ANNOUNCED, Status.IN_TRANSIT, Status.OUT_FOR_DELIVERY, Status.PICKUP_READY, Status.DELIVERED)
