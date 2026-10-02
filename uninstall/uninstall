@@ -1,0 +1,7 @@
+#!/bin/bash
+# Läuft als root bei der Deinstallation. Plugin-Ordner und Cronjob entfernt
+# LoxBerry selbst; hier ist nichts weiter aufzuräumen.
+# Hinweis: Retained MQTT-Topics unter pakettracker/# bleiben im Broker erhalten.
+# Argumente: <TEMPFILE> <NAME> <FOLDER> <VERSION> <LBHOMEDIR> <TEMPFOLDER>
+echo "<INFO> Pakettracker wird entfernt"
+exit 0

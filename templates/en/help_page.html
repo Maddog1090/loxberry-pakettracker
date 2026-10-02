@@ -1,0 +1,56 @@
+<h2>Help – quick guide</h2>
+<p>Pakettracker {{VERSION}} · All details are in the detailed guide (button below, German). {{MOCK}}</p>
+
+<div data-role="collapsible" data-collapsed="false">
+<h3>Getting started</h3>
+<ol>
+    <li><b>Test run:</b> <i>Shipments</i> → number <code>00340434000000000001</code>, carrier "Detect automatically" → <i>Add shipment</i> → <i>Status</i> → <b>Update now</b>. Slot 1 shows a simulated status.</li>
+    <li><b>Check MQTT:</b> LoxBerry → MQTT Gateway → <i>Incoming Overview</i>: entries <code>{{BASE_TOPIC}}/…</code> must appear.</li>
+    <li><b>Set up Loxone</b> (see below) while test mode is active.</li>
+    <li>Set up and test the <b>e-mail input</b> (<i>Settings → E-mail input</i>) – required for Amazon, Hermes, DPD, GLS.</li>
+    <li>Optionally enter the <b>DHL API key</b> and <b>UPS credentials</b> (<i>Settings → Carriers</i>).</li>
+    <li><b>Switch off test mode</b> (<i>Settings → General</i>) → <i>Status → Update now</i> → check the <i>Carriers</i> page.</li>
+</ol>
+</div>
+
+<div data-role="collapsible">
+<h3>Status codes 0–7</h3>
+<table class="pt-table">
+    <tr><td>0</td><td>Unknown (empty slot: <code>used</code> = 0)</td></tr>
+    <tr><td>1</td><td>Announced</td></tr>
+    <tr><td>2</td><td>In transit</td></tr>
+    <tr><td>3</td><td>Out for delivery</td></tr>
+    <tr><td>4</td><td>Delivered (in slots only on the delivery day)</td></tr>
+    <tr><td>5</td><td>Ready for pickup</td></tr>
+    <tr><td>6</td><td>Problem</td></tr>
+    <tr><td>7</td><td>Returned (not in slots)</td></tr>
+</table>
+</div>
+
+<div data-role="collapsible">
+<h3>Carriers</h3>
+<ul>
+    <li><b>DHL</b> (API + e-mail): developer.dhl.com → My Apps → app with "Shipment Tracking – Unified" → Consumer Key → <i>Settings → Carriers → DHL</i>.</li>
+    <li><b>UPS</b> (API + e-mail): developer.ups.com → Apps with product "Tracking" → Client ID and Secret → <i>Settings → Carriers → UPS</i>.</li>
+    <li><b>Amazon, Hermes, DPD, GLS</b> (e-mail only): enable e-mail notifications at the carrier and set up the e-mail input.</li>
+    <li>A manually selected carrier always wins over automatic detection. 12- and 14-digit numbers are ambiguous.</li>
+</ul>
+</div>
+
+<div data-role="collapsible">
+<h3>MQTT, Loxone, REST</h3>
+<ul>
+    <li>Topics: <code>{{BASE_TOPIC}}/summary/…</code>, <code>{{BASE_TOPIC}}/slot/&lt;n&gt;/…</code>, <code>{{BASE_TOPIC}}/provider/&lt;id&gt;/active|shipment_count|error|last_success</code>. MQTT Gateway V2: add subscription <code>{{BASE_TOPIC}}/#</code>. Empty values (e.g. <code>error</code> without error) are not retained by the broker (MQTT standard), but are delivered live.</li>
+    <li>Loxone: virtual inputs named like in the gateway (<code>/</code> → <code>_</code>), e.g. <code>{{BASE_TOPIC}}_slot_1_status_code</code>; texts as virtual text inputs.</li>
+    <li>REST: <code>{{API_URL}}?q=summary&amp;format=text&amp;token=…</code> – token under <i>Settings → REST</i>.</li>
+</ul>
+</div>
+
+<div data-role="collapsible">
+<h3>Security, logs, backup</h3>
+<ul>
+    <li>Credentials are stored on the LoxBerry only (0600), never shown again and never logged. Empty password field = keep value.</li>
+    <li>Errors per carrier on the <i>Carriers</i> page; log lines on <i>Status</i> (log level under <i>Settings → General</i>). Logs are cleared on reboot.</li>
+    <li>Update: install the new ZIP – settings, credentials and shipments are kept.</li>
+</ul>
+</div>

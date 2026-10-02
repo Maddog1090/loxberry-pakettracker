@@ -1,0 +1,70 @@
+{
+  "general": {
+    "interval_minutes": 15,
+    "keep_delivered_days": 1,
+    "max_age_days": 30,
+    "mock_mode": true,
+    "loglevel": "info"
+  },
+  "mqtt": {
+    "enabled": true,
+    "use_system_broker": true,
+    "host": "localhost",
+    "port": 1883,
+    "user": "",
+    "base_topic": "pakettracker",
+    "retain": true,
+    "slots": 5
+  },
+  "rest": {
+    "enabled": true,
+    "require_token": true
+  },
+  "email": {
+    "enabled": false,
+    "source": "imap",
+    "host": "",
+    "port": 993,
+    "security": "ssl",
+    "user": "",
+    "folder": "INBOX",
+    "lookback_days": 14,
+    "mark_processed": false,
+    "eml_dir": ""
+  },
+  "providers": {
+    "amazon": {
+      "enabled": true,
+      "sender_domains": "amazon.de, amazon.com"
+    },
+    "dhl": {
+      "enabled": true,
+      "language": "de",
+      "recipient_postal_code": "",
+      "check_interval_minutes": 60,
+      "daily_limit": 250
+    },
+    "dpd": {
+      "enabled": true
+    },
+    "fedex": {
+      "enabled": false
+    },
+    "gls": {
+      "enabled": true
+    },
+    "hermes": {
+      "enabled": true
+    },
+    "tnt": {
+      "enabled": false
+    },
+    "ups": {
+      "enabled": true,
+      "environment": "production",
+      "language": "de",
+      "check_interval_minutes": 60,
+      "daily_limit": 250
+    }
+  }
+}

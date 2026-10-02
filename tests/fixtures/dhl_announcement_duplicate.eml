@@ -1,0 +1,12 @@
+From: DHL Paket <noreply@dhl.de>
+To: max@example.org
+Subject: Ihr DHL Paket kommt am Montag
+Date: Fri, 02 Oct 2026 07:12:00 +0200
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+
+<html><body>
+<p>Hallo,</p>
+<p>Ihr Paket wird voraussichtlich am 05.10.2026 zwischen 10:00 und 14:00 Uhr zugestellt.</p>
+<p><a href="https://www.dhl.de/de/privatkunden/pakete-empfangen/verfolgen.html?piececode=00340434000000000001">Sendung verfolgen</a></p>
+</body></html>

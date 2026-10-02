@@ -1,0 +1,29 @@
+# Zugangsdaten niemals einchecken
+credentials.json
+!docs/credentials.example.json
+
+# Laufzeitdaten aus lokalen Testläufen
+data/*.json
+data/last_run
+data/run.lock
+log/
+dev/
+
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Build-Ergebnisse (werden als GitHub-Release-Assets veröffentlicht, nicht im Repository)
+*.zip
+*.zip.sha256
+
+# Lokale Umgebungen / Werkzeuge
+.venv/
+venv/
+.env
+.idea/
+.vscode/
+.claude/
+*.log
+*.swp
+.DS_Store

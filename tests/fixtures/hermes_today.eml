@@ -1,0 +1,12 @@
+From: Hermes <noreply@paketankuendigung.myhermes.de>
+To: max@example.org
+Subject: Ihre Hermes Sendung wird heute zugestellt
+Date: Fri, 02 Oct 2026 06:45:00 +0200
+Message-ID: <hermes-0001@example.invalid>
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+
+<html><body><table><tr><td>
+<p>Guten Morgen,</p><p>Ihre Sendung ist heute in Zustellung.</p>
+<a href="https://www.myhermes.de/empfangen/sendungsverfolgung/sendungsinformation#H1000000000000000001">Sendung verfolgen</a>
+</td></tr></table></body></html>

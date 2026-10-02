@@ -1,0 +1,148 @@
+<h2>Hilfe – Kurzanleitung</h2>
+<p>Pakettracker {{VERSION}} · Alle Details stehen in der ausführlichen Anleitung (Knopf unten). {{MOCK}}</p>
+
+<div data-role="collapsible" data-collapsed="false">
+<h3>Erste Schritte</h3>
+<ol>
+    <li><b>Testlauf:</b> <i>Sendungen</i> → Nummer <code>00340434000000000001</code>, Anbieter „Automatisch erkennen“ → <i>Sendung hinzufügen</i> → <i>Status</i> → <b>Jetzt aktualisieren</b>. In Slot 1 erscheint ein simulierter Status.</li>
+    <li><b>MQTT prüfen:</b> LoxBerry → MQTT Gateway → <i>Incoming Overview</i>: Einträge <code>{{BASE_TOPIC}}/…</code> müssen erscheinen.</li>
+    <li><b>Loxone einrichten</b> (siehe unten), solange der Testmodus läuft.</li>
+    <li><b>E-Mail-Eingang</b> einrichten und testen (<i>Einstellungen → E-Mail-Eingang</i>) – nötig für Amazon, Hermes, DPD, GLS.</li>
+    <li>Optional <b>DHL-API-Key</b> und <b>UPS-Zugangsdaten</b> eintragen (<i>Einstellungen → Anbieter</i>).</li>
+    <li><b>Testmodus ausschalten</b> (<i>Einstellungen → Allgemein</i>) → <i>Status → Jetzt aktualisieren</i> → Seite <i>Anbieter</i> kontrollieren.</li>
+</ol>
+</div>
+
+<div data-role="collapsible">
+<h3>Testmodus</h3>
+<p>Im Testmodus werden keine Paketdienste abgefragt. Jede eingetragene Sendung bekommt einen erfundenen, gleichbleibenden Status („[Testmodus] …“) – ideal zum Einrichten von MQTT und Loxone. Der E-Mail-Eingang arbeitet trotzdem. Beim Ausschalten werden die simulierten Status einmalig verworfen.</p>
+</div>
+
+<div data-role="collapsible">
+<h3>Statuscodes 0–7</h3>
+<table class="pt-table">
+    <tr><th>Code</th><th>Text</th><th>Bedeutung</th></tr>
+    <tr><td>0</td><td>Unbekannt</td><td>noch kein Status (bei leerem Slot ist <code>used</code> = 0)</td></tr>
+    <tr><td>1</td><td>Angekündigt</td><td>Sendung angemeldet, noch nicht beim Paketdienst</td></tr>
+    <tr><td>2</td><td>Unterwegs</td><td>beim Paketdienst, im Transport</td></tr>
+    <tr><td>3</td><td>In Zustellung</td><td>heute auf dem Zustellfahrzeug</td></tr>
+    <tr><td>4</td><td>Zugestellt</td><td>zugestellt (in den Slots nur am Zustelltag)</td></tr>
+    <tr><td>5</td><td>Abholbereit</td><td>Filiale, Packstation, PaketShop, Access Point</td></tr>
+    <tr><td>6</td><td>Problem</td><td>Zustellversuch gescheitert, Verzögerung, Adressproblem</td></tr>
+    <tr><td>7</td><td>Rücksendung</td><td>geht zurück an den Absender (nicht in den Slots)</td></tr>
+</table>
+</div>
+
+<div data-role="collapsible">
+<h3>Sendungen hinzufügen und Anbieter-Erkennung</h3>
+<p><i>Sendungen → Sendung hinzufügen</i>: Nummer eingeben (Leerzeichen egal), Anbieter „Automatisch erkennen“ oder manuell wählen. <b>Eine manuelle Wahl hat immer Vorrang.</b> Sendungen aus E-Mails erscheinen automatisch.</p>
+<table class="pt-table">
+    <tr><th>Nummer</th><th>Erkannt als</th></tr>
+    <tr><td><code>1Z…</code> (18 Zeichen)</td><td>UPS</td></tr>
+    <tr><td><code>H</code> + 19 Ziffern</td><td>Hermes</td></tr>
+    <tr><td><code>TBA…</code></td><td>Amazon</td></tr>
+    <tr><td><code>0034…</code> (20 Ziffern), <code>JJD…</code>, <code>RR…DE</code></td><td>DHL</td></tr>
+    <tr><td>11 Ziffern / 8-stellige Track-ID</td><td>GLS</td></tr>
+    <tr><td>12 Ziffern</td><td>DHL <i>oder</i> GLS – mehrdeutig</td></tr>
+    <tr><td>14 Ziffern</td><td>Hermes <i>oder</i> DPD – mehrdeutig</td></tr>
+</table>
+<p>Bei mehrdeutigen Nummern erscheint ein Hinweis. Ist die Zuordnung falsch: Sendung entfernen und den Anbieter manuell wählen.</p>
+</div>
+
+<div data-role="collapsible">
+<h3>Paketdienste einrichten</h3>
+<table class="pt-table">
+    <tr><th>Anbieter</th><th>Quelle</th><th>Einrichtung</th></tr>
+    <tr><td>DHL</td><td>API + E-Mail</td><td>developer.dhl.com → <i>My Apps</i> → App mit „Shipment Tracking – Unified“ → nach Freigabe <b>Consumer Key</b> kopieren → <i>Einstellungen → Anbieter → DHL</i> → „Speichern &amp; Verbindung testen“. Kostenlos: 250 Abfragen/Tag, das Plugin drosselt selbst.</td></tr>
+    <tr><td>UPS</td><td>API + E-Mail</td><td>developer.ups.com → <i>Apps → Add Apps</i> mit Produkt „Tracking“ → <b>Client ID</b> und <b>Client Secret</b> → <i>Einstellungen → Anbieter → UPS</i>, Umgebung „production“ → „Speichern &amp; Verbindung testen“.</td></tr>
+    <tr><td>Amazon</td><td>E-Mail</td><td>E-Mail-Eingang einrichten. Erkannt werden Bestellnummer, Artikel, Termin, TBA-Nummer oder die Nummer des ausliefernden Paketdienstes.</td></tr>
+    <tr><td>Hermes</td><td>E-Mail</td><td>Benachrichtigungen auf myhermes.de aktivieren, E-Mail-Eingang einrichten.</td></tr>
+    <tr><td>DPD</td><td>E-Mail</td><td>Benachrichtigungen per DPD-App/myDPD aktivieren, E-Mail-Eingang einrichten.</td></tr>
+    <tr><td>GLS</td><td>E-Mail</td><td>Benachrichtigungen über gls-pakete.de/GLS-App aktivieren, E-Mail-Eingang einrichten.</td></tr>
+</table>
+<p>Die Seite <i>Anbieter</i> zeigt je Paketdienst Zustand, letzten Erfolg, letzten Fehler und Anzahl Sendungen. „Nur E-Mail (Zugangsdaten fehlen)“ bei DHL/UPS ist kein Fehler.</p>
+</div>
+
+<div data-role="collapsible">
+<h3>E-Mail-Eingang (IMAP)</h3>
+<p><i>Einstellungen → E-Mail-Eingang</i>: einschalten, Quelle <code>imap</code>, Server, Port, Verschlüsselung, Benutzer (meist die E-Mail-Adresse), Passwort bzw. <b>App-Passwort</b>, Ordner (mehrere mit Komma, z.B. <code>INBOX, Pakete</code>) → <b>„Speichern &amp; IMAP-Verbindung testen“</b>.</p>
+<table class="pt-table">
+    <tr><th>Anbieter</th><th>Server</th><th>Port / Verschlüsselung</th></tr>
+    <tr><td>GMX</td><td><code>imap.gmx.net</code></td><td>993 / ssl (IMAP in GMX aktivieren)</td></tr>
+    <tr><td>WEB.DE</td><td><code>imap.web.de</code></td><td>993 / ssl (IMAP in WEB.DE aktivieren)</td></tr>
+    <tr><td>T-Online</td><td><code>secureimap.t-online.de</code></td><td>993 / ssl (E-Mail-Passwort)</td></tr>
+    <tr><td>Gmail</td><td><code>imap.gmail.com</code></td><td>993 / ssl (App-Passwort)</td></tr>
+    <tr><td>iCloud</td><td><code>imap.mail.me.com</code></td><td>993 / ssl (App-Passwort)</td></tr>
+    <tr><td>IONOS / Strato</td><td><code>imap.ionos.de</code> / <code>imap.strato.de</code></td><td>993 / ssl</td></tr>
+</table>
+<p>Das Plugin liest nur, löscht oder verschiebt nichts, markiert nichts als gelesen und lädt nur Mails von Paketdiensten. Weitergeleitete Mails werden nicht erkannt (anderer Absender). Outlook.com/Hotmail funktioniert in der Regel nicht (nur OAuth-Anmeldung).</p>
+</div>
+
+<div data-role="collapsible">
+<h3>MQTT und wichtige Topics</h3>
+<p>Das Plugin sendet an den LoxBerry-Broker (retained). Leere Werte (z.B. <code>error</code> ohne Fehler) werden nach MQTT-Standard nicht gespeichert, Loxone erhält sie aber im laufenden Betrieb. MQTT Gateway V1 abonniert <code>{{BASE_TOPIC}}/#</code> automatisch, bei Gateway V2 die Subscription <code>{{BASE_TOPIC}}/#</code> selbst anlegen.</p>
+<table class="pt-table">
+    <tr><td><code>{{BASE_TOPIC}}/summary/active</code></td><td>aktive Sendungen</td></tr>
+    <tr><td><code>{{BASE_TOPIC}}/summary/out_for_delivery</code></td><td>heute in Zustellung</td></tr>
+    <tr><td><code>{{BASE_TOPIC}}/summary/pickup_ready</code></td><td>abholbereit</td></tr>
+    <tr><td><code>{{BASE_TOPIC}}/summary/delivered_today</code></td><td>heute zugestellt</td></tr>
+    <tr><td><code>{{BASE_TOPIC}}/summary/next_eta</code></td><td>nächster Termin</td></tr>
+    <tr><td><code>{{BASE_TOPIC}}/slot/1/status_code</code> … <code>/status_label</code>, <code>/description</code>, <code>/eta</code>, <code>/used</code></td><td>Slot 1 (wichtigste Sendung), ebenso Slot 2…N</td></tr>
+    <tr><td><code>{{BASE_TOPIC}}/provider/&lt;id&gt;/active</code>, <code>/shipment_count</code>, <code>/error</code>, <code>/last_success</code></td><td>je Paketdienst (<code>error</code> leer = ok)</td></tr>
+</table>
+</div>
+
+<div data-role="collapsible">
+<h3>Einbindung in Loxone</h3>
+<p>Das MQTT Gateway schickt jeden Wert als virtuellen Eingang; aus <code>/</code> wird <code>_</code>. Den genauen Namen zeigt die <i>Incoming Overview</i> des Gateways.</p>
+<table class="pt-table">
+    <tr><th>Virtueller Eingang in Loxone Config</th><th>Typ</th></tr>
+    <tr><td><code>{{BASE_TOPIC}}_summary_out_for_delivery</code></td><td>virtueller Eingang (analog) – z.B. „&gt; 0“ → Push „Paket kommt heute“</td></tr>
+    <tr><td><code>{{BASE_TOPIC}}_slot_1_status_code</code></td><td>virtueller Eingang (analog, 0–7) – z.B. Status-Baustein</td></tr>
+    <tr><td><code>{{BASE_TOPIC}}_slot_1_status_label</code>, <code>…_description</code>, <code>…_eta</code></td><td>virtueller Texteingang – Anzeige in der App</td></tr>
+</table>
+</div>
+
+<div data-role="collapsible">
+<h3>REST-API</h3>
+<p>Adresse: <code>{{API_URL}}?q=summary&amp;format=text&amp;token=…</code> (weitere: <code>q=slots</code>, <code>q=slot&amp;n=1</code>, <code>q=shipments</code>, <code>q=all</code>). Den Token und fertige Beispiel-Links finden Sie unter <i>Einstellungen → REST</i>.</p>
+<p>Loxone: virtueller HTTP-Eingang mit dieser URL (Abfragezyklus 300 s), Befehl z.B. <code>summary.active=\v</code>. Virtuelle HTTP-Eingänge lesen nur Zahlen; Texte gibt es per MQTT.</p>
+</div>
+
+<div data-role="collapsible">
+<h3>Sicherheit</h3>
+<ul>
+    <li>Zugangsdaten liegen nur auf dem LoxBerry (<code>credentials.json</code>, Rechte 0600), werden nach dem Speichern nie wieder angezeigt und nie geloggt.</li>
+    <li>Leeres Passwortfeld = bisherigen Wert behalten; löschen über „Gespeicherten Wert löschen“.</li>
+    <li>Für IMAP ein App-Passwort und möglichst einen eigenen Ordner verwenden. REST-Token nicht weitergeben.</li>
+    <li>An DHL/UPS geht nur die Sendungsnummer (DHL optional die PLZ). Mails werden nur lokal ausgewertet.</li>
+</ul>
+</div>
+
+<div data-role="collapsible">
+<h3>Logs und Fehlersuche</h3>
+<ul>
+    <li>Seite <i>Anbieter</i>: letzter Fehler je Paketdienst. Seite <i>Status</i>: letzte Logzeilen; „Jetzt aktualisieren“ zeigt die komplette Ausgabe.</li>
+    <li>Mehr Details: <i>Einstellungen → Allgemein → Loglevel</i> = debug. Logs liegen im Arbeitsspeicher und sind nach einem Neustart leer.</li>
+    <li>„DHL lehnt den API-Key ab“: Key/Freigabe prüfen. „IMAP-Anmeldung fehlgeschlagen“: App-Passwort verwenden, IMAP aktivieren. Keine MQTT-Werte: Broker/Gateway prüfen, bei Gateway V2 Subscription anlegen.</li>
+    <li>Falscher Anbieter: Sendung entfernen und manuell wählen.</li>
+</ul>
+</div>
+
+<div data-role="collapsible">
+<h3>Backup und Update</h3>
+<ul>
+    <li><b>Update:</b> Neue ZIP in der Plugin-Verwaltung installieren. Einstellungen, Zugangsdaten und Sendungen bleiben erhalten.</li>
+    <li><b>Backup:</b> LoxBerry-Systemsicherung oder die Ordner <code>config/plugins/pakettracker</code> und <code>data/plugins/pakettracker</code> sichern (enthalten Zugangsdaten – sicher aufbewahren).</li>
+</ul>
+</div>
+
+<div data-role="collapsible">
+<h3>Bekannte Einschränkungen</h3>
+<ul>
+    <li>Amazon, Hermes, DPD, GLS nur über E-Mail; Layoutänderungen der Mails können die Erkennung beeinträchtigen.</li>
+    <li>12- und 14-stellige Nummern sind mehrdeutig. Sendungen aus E-Mails lassen sich nicht von Hand ausblenden.</li>
+    <li>DHL kostenlos: 250 Abfragen/Tag (ca. 10 aktive Sendungen bei 60 Minuten Abstand).</li>
+    <li>FedEx/TNT nur vorbereitet; Outlook.com-Postfächer werden in der Regel nicht unterstützt.</li>
+</ul>
+</div>

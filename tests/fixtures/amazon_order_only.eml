@@ -1,0 +1,11 @@
+From: "Amazon.de" <bestellbestaetigung@amazon.de>
+To: max@example.org
+Subject: Ihre Amazon.de Bestellung von „Buch XY“
+Date: Tue, 29 Sep 2026 12:00:00 +0200
+Message-ID: <amazon-0003a@example.invalid>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+Vielen Dank für Ihre Bestellung.
+Bestellnummer 302-0000000-0000003
+Lieferung voraussichtlich: Freitag, 9. Oktober

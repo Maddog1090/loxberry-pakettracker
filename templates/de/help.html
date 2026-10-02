@@ -1,0 +1,17 @@
+<p><b>Pakettracker</b> sammelt Sendungen von DHL, Amazon, Hermes, DPD, GLS und UPS und stellt sie Loxone per MQTT und HTTP bereit. Ausführliche Anleitung: README des Plugins.</p>
+<p><b>Datenquellen:</b> DHL und UPS über ihre offiziellen APIs (Zugangsdaten nötig) plus E-Mails; Amazon, Hermes, DPD und GLS nur über ihre Benachrichtigungsmails (E-Mail-Eingang nötig).</p>
+<ol>
+    <li><b>Testmodus</b> (Einstellungen → Allgemein): Solange er an ist, werden keine Anbieter abgefragt – ideal zum Einrichten von MQTT und Loxone.</li>
+    <li><b>E-Mail-Eingang</b> (Einstellungen): IMAP-Server, Port, Verschlüsselung, Benutzer, (App-)Passwort, Ordner eintragen → „Speichern &amp; IMAP-Verbindung testen“. Mails werden nur gelesen, nie gelöscht.</li>
+    <li><b>DHL</b>: developer.dhl.com → My Apps → App mit „Shipment Tracking – Unified“ → Consumer Key kopieren → Einstellungen → Anbieter → DHL.</li>
+    <li><b>UPS</b>: developer.ups.com → Apps → App mit Produkt „Tracking“ → Client ID und Secret → Einstellungen → Anbieter → UPS → „Speichern &amp; Verbindung testen“.</li>
+    <li><b>Amazon, Hermes, DPD, GLS</b>: E-Mail-Benachrichtigungen beim Paketdienst aktivieren; Sendungen erscheinen automatisch.</li>
+    <li><b>Testmodus ausschalten</b> → Status → „Jetzt aktualisieren“. Die Seite <b>Anbieter</b> zeigt Zustand, letzten Erfolg und Fehler je Paketdienst.</li>
+</ol>
+<ul>
+    <li><b>Sendungen manuell erfassen:</b> „Automatisch erkennen“ oder Anbieter wählen – die manuelle Wahl hat immer Vorrang. Bei mehrdeutigen Nummern (12 bzw. 14 Ziffern) erscheint ein Hinweis.</li>
+    <li><b>MQTT:</b> Topics unter <code>pakettracker/…</code> (summary, slot/1…N, provider/&lt;id&gt;/active|error|last_success|shipment_count). MQTT Gateway V1 abonniert automatisch, bei V2 <code>pakettracker/#</code> manuell anlegen.</li>
+    <li><b>HTTP:</b> <code>/plugins/pakettracker/api.php?q=summary&amp;format=text&amp;token=…</code></li>
+    <li><b>Sicherheit:</b> Zugangsdaten liegen nur auf dem LoxBerry (0600), werden nie angezeigt und nie geloggt. Leeres Passwortfeld = bisherigen Wert behalten.</li>
+    <li><b>Update/Backup:</b> Einfach die neue ZIP installieren – Einstellungen, Zugangsdaten und Sendungen bleiben erhalten.</li>
+</ul>

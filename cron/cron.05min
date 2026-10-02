@@ -1,0 +1,6 @@
+#!/bin/bash
+# Wird von LoxBerry alle 5 Minuten als Benutzer "loxberry" ausgeführt.
+# Das tatsächliche Abfrageintervall (general.interval_minutes) prüft
+# pakettracker.py selbst – dieser Job ist nur der Taktgeber.
+# REPLACELBPBINDIR ersetzt der LoxBerry-Installer durch den Plugin-bin-Ordner.
+exec /usr/bin/python3 REPLACELBPBINDIR/pakettracker.py run >/dev/null 2>&1

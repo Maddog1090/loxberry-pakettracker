@@ -1,0 +1,17 @@
+<p><b>Pakettracker</b> collects shipments from DHL, Amazon, Hermes, DPD, GLS and UPS and provides them to Loxone via MQTT and HTTP. Detailed guide: the plugin README.</p>
+<p><b>Data sources:</b> DHL and UPS via their official APIs (credentials required) plus e-mails; Amazon, Hermes, DPD and GLS only via their notification e-mails (e-mail input required).</p>
+<ol>
+    <li><b>Test mode</b> (Settings → General): while active, no carrier is queried – ideal to set up MQTT and Loxone.</li>
+    <li><b>E-mail input</b> (Settings): enter IMAP server, port, encryption, user, (app) password, folders → "Save &amp; test IMAP connection". Mails are only read, never deleted.</li>
+    <li><b>DHL</b>: developer.dhl.com → My Apps → app with "Shipment Tracking – Unified" → copy the Consumer Key → Settings → Carriers → DHL.</li>
+    <li><b>UPS</b>: developer.ups.com → Apps → app with product "Tracking" → Client ID and Secret → Settings → Carriers → UPS → "Save &amp; test connection".</li>
+    <li><b>Amazon, Hermes, DPD, GLS</b>: enable e-mail notifications at the carrier; shipments appear automatically.</li>
+    <li><b>Switch off test mode</b> → Status → "Update now". The <b>Carriers</b> page shows health, last success and errors per carrier.</li>
+</ol>
+<ul>
+    <li><b>Add shipments manually:</b> "Detect automatically" or choose a carrier – a manual choice always wins. Ambiguous numbers (12 or 14 digits) show a hint.</li>
+    <li><b>MQTT:</b> topics under <code>pakettracker/…</code> (summary, slot/1…N, provider/&lt;id&gt;/active|error|last_success|shipment_count). MQTT Gateway V1 subscribes automatically; for V2 add <code>pakettracker/#</code> manually.</li>
+    <li><b>HTTP:</b> <code>/plugins/pakettracker/api.php?q=summary&amp;format=text&amp;token=…</code></li>
+    <li><b>Security:</b> credentials are stored on the LoxBerry only (0600), never displayed and never logged. Empty password field = keep current value.</li>
+    <li><b>Update/backup:</b> just install the new ZIP – settings, credentials and shipments are kept.</li>
+</ul>

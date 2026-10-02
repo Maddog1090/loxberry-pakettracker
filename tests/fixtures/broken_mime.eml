@@ -1,0 +1,11 @@
+From: DHL Paket <noreply@dhl.de>
+To: max@example.org
+Subject: Ihr DHL Paket kommt bald
+Date: kein-datum
+MIME-Version: 1.0
+Content-Type: multipart/alternative
+
+--ohne-boundary-deklaration
+Content-Type: text/plain; charset=x-unbekannt
+
+Sendungsnummer: 00340434000000000005
