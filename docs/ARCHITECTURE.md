@@ -202,7 +202,7 @@ Das LoxBerry MQTT Gateway V1 (Standard) liest `config/mqtt_subscriptions.cfg` je
 
 MQTT ist bewusst optional: Ohne paho-mqtt, ohne Broker in `general.json` oder bei einem nicht erreichbaren Broker (Verbindungs-Timeout 10 s) wird nur ein Fehler protokolliert. `state.json`, Oberfläche und REST arbeiten weiter.
 
-**REST** (`/plugins/pakettracker/api.php`, öffentlich erreichbar, daher Token-Pflicht): `q=summary|slots|slot&n=…|shipments|all`, `format=json|text`. `format=text` liefert `schluessel=wert`-Zeilen für die Befehlserkennung in virtuellen HTTP-Eingängen (`summary.active=\v`).
+**REST** (`/plugins/pakettracker/api.php`, öffentlich erreichbar, daher Token-Pflicht): `q=summary|slots|slot&n=…|shipments|all`, `format=json|text`. `format=text` liefert `schluessel=wert`-Zeilen für die Befehlserkennung in virtuellen HTTP-Eingängen (`summary.active=\v`). Mit `field=…` (bei `q=summary` und `q=slot&n=…`) kommt genau ein Wert als bereinigter UTF-8-Klartext (Entities aufgelöst, Leerzeichen getrimmt); unbekanntes Feld/ungültiger Slot → 400, REST aus/Token falsch → 403, nur GET. `api.php` puffert alle Ausgaben und zeigt keine PHP-Fehler an, damit Loxone nie HTML-Fehlerseiten erhält.
 
 ## LoxBerry-Konventionen (geprüft gegen `sbin/plugininstall.pl`, Stand 09/2026)
 

@@ -2,7 +2,7 @@
 
 **Paketverfolgung für Loxone:** Pakettracker sammelt Ankündigungen und Sendungsstatus von **DHL, Amazon, Hermes, DPD, GLS und UPS** und stellt sie dem Loxone Miniserver über **MQTT** (und optional REST) bereit – z.B. für „Heute kommt ein Paket“ in der Loxone-App oder eine Erinnerung, ein Paket abzuholen.
 
-**Version 0.2.2** · LoxBerry ≥ 3.0 (getestet mit 4.0) · Autor: ToRe90 · [MIT-Lizenz](LICENSE)
+**Version 0.2.3** · LoxBerry ≥ 3.0 (getestet mit 4.0) · Autor: ToRe90 · [MIT-Lizenz](LICENSE)
 
 📖 **Ausführliche Anleitung (Deutsch): [docs/ANLEITUNG_DE.md](docs/ANLEITUNG_DE.md)** – auf dem LoxBerry unter Plugin → **Hilfe** → **Ausführliche Anleitung öffnen**.
 

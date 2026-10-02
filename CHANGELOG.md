@@ -4,6 +4,18 @@ Alle nennenswerten Änderungen am Plugin. Format nach [Keep a Changelog](https:/
 
 > Die Versionen bis einschließlich 0.2.2 entstanden am 2026-10-02 während der Entwicklung und wurden nicht öffentlich veröffentlicht. Die Datumsangaben sind die Build-Daten. 0.2.2 ist die erste zur Veröffentlichung vorgesehene Version.
 
+## [0.2.3] – 2026-10-02
+
+### Hinzugefügt
+- REST-API: Einzelwert-Abfragen für Loxone, z.B. `api.php?q=summary&field=active&format=text` oder `api.php?q=slot&n=1&field=description&format=text`. Die Antwort ist genau der Wert als UTF-8-Klartext (ohne Feldnamen, JSON oder HTML, ohne Leerzeichen am Rand, HTML-Entities aufgelöst). Leere Slots liefern `0` bzw. einen leeren Text. Mit JSON-Format: `{"q":…,"field":…,"value":…}`
+- Hilfe: Abschnitt „Loxone per HTTP/REST“ mit fertigen Adressen (aktuelle LoxBerry-Adresse, Token nur bei aktivem Token-Schutz) und Tabelle der empfohlenen Loxone-Eingänge
+- Tests für die REST-API gegen den PHP-Webserver und für die Hilfe-Seite
+
+### Geändert
+- REST-API: Ist die Schnittstelle ausgeschaltet, kommt **403** statt 404. Unbekanntes Feld oder ungültiger Slot bei `field=…` → 400. Nur GET/HEAD erlaubt (405).
+- REST-API: `api.php` sendet nie PHP-Warnungen oder HTML-Fehlerseiten; Parameter als Array (`q[]=…`) werden abgefangen. Die bisherige Zeilenausgabe (`format=text`) bereinigt Werte genauso.
+- Einstellungen → REST-Beispiele: Token nur bei aktivem Token-Schutz, zusätzliche Einzelwert-Beispiele. Die Adressen nutzen die IP-Adresse des LoxBerry, wenn die Oberfläche über einen Hostnamen geöffnet wurde.
+
 ## [0.2.2] – 2026-10-02
 
 ### Hinzugefügt

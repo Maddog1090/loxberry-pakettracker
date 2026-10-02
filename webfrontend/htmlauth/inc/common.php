@@ -86,6 +86,52 @@ function pt_providers(array $describe): array
     return $providers;
 }
 
+/* --- REST-Adressen -------------------------------------------------------- */
+
+/**
+ * Adresse von api.php, wie Loxone sie aufrufen soll. Basis ist die Adresse, über die die
+ * Oberfläche gerade geöffnet ist; ist das ein Hostname, wird die IPv4-Adresse des LoxBerry
+ * bevorzugt (der Miniserver löst lokale Hostnamen oft nicht auf). Ein abweichender Port bleibt.
+ */
+function pt_api_base(): string
+{
+    $host = (string)($_SERVER['HTTP_HOST'] ?? '');
+    $port = '';
+    if (preg_match('/^([A-Za-z0-9.-]+)(:\d{1,5})?$/', $host, $m)) {
+        $host = $m[1];
+        $port = $m[2] ?? '';
+    } elseif (!preg_match('/^\[[0-9A-Fa-f:.]+\](:\d{1,5})?$/', $host)) {
+        $host = '';
+    }
+    $server_ip = (string)($_SERVER['SERVER_ADDR'] ?? '');
+    if (!filter_var($host, FILTER_VALIDATE_IP) && filter_var($server_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)
+        && strpos($server_ip, '127.') !== 0) {
+        $host = $server_ip;
+    }
+    return 'http://' . ($host !== '' ? $host : 'loxberry') . $port . '/plugins/' . LBPPLUGINDIR . '/api.php';
+}
+
+/** Vollständige REST-Adresse; der Token wird nur angehängt, wenn der Token-Schutz aktiv ist. */
+function pt_rest_url(string $base, string $query, array $rest_values): string
+{
+    $token = (string)($rest_values['token'] ?? '');
+    $url = $base . '?' . $query;
+    if (($rest_values['require_token'] ?? true) && $token !== '') {
+        $url .= '&token=' . rawurlencode($token);
+    }
+    return $url;
+}
+
+/** "summary/active" → "q=summary&field=active&format=text", "slot/1/eta" → "q=slot&n=1&field=eta&format=text". */
+function pt_rest_value_query(string $spec): string
+{
+    $parts = explode('/', $spec);
+    if (count($parts) === 3 && $parts[0] === 'slot') {
+        return 'q=slot&n=' . (int)$parts[1] . '&field=' . rawurlencode($parts[2]) . '&format=text';
+    }
+    return 'q=' . rawurlencode($parts[0]) . '&field=' . rawurlencode($parts[1] ?? '') . '&format=text';
+}
+
 function pt_fmt_time($iso): string
 {
     $ts = $iso ? strtotime((string)$iso) : false;
