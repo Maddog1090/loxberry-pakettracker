@@ -104,9 +104,54 @@
 </div>
 
 <div data-role="collapsible">
-<h3>REST-API</h3>
-<p>Adresse: <code>{{API_URL}}?q=summary&amp;format=text&amp;token=…</code> (weitere: <code>q=slots</code>, <code>q=slot&amp;n=1</code>, <code>q=shipments</code>, <code>q=all</code>). Den Token und fertige Beispiel-Links finden Sie unter <i>Einstellungen → REST</i>.</p>
-<p>Loxone: virtueller HTTP-Eingang mit dieser URL (Abfragezyklus 300 s), Befehl z.B. <code>summary.active=\v</code>. Virtuelle HTTP-Eingänge lesen nur Zahlen; Texte gibt es per MQTT.</p>
+<h3>Loxone per HTTP/REST</h3>
+{{REST_STATUS}}
+<p>Jede dieser Adressen liefert <b>genau einen Wert</b> als reinen Text (UTF-8, ohne Feldnamen, ohne JSON/HTML, ohne Leerzeichen am Rand), z.B. <code>2</code>. Ein leerer Slot liefert bei Zahlen <code>0</code>, bei Texten eine leere Antwort.</p>
+<table class="pt-table">
+    <tr><th>Wert</th><th>Adresse</th></tr>
+    <tr><td>Paketanzahl aktiv</td><td>{{REST:summary/active}}</td></tr>
+    <tr><td>Pakete in Zustellung</td><td>{{REST:summary/out_for_delivery}}</td></tr>
+    <tr><td>Slot 1 Anbieter</td><td>{{REST:slot/1/provider}}</td></tr>
+    <tr><td>Slot 1 Beschreibung</td><td>{{REST:slot/1/description}}</td></tr>
+    <tr><td>Slot 1 Statuscode (0–7)</td><td>{{REST:slot/1/status_code}}</td></tr>
+    <tr><td>Slot 1 Statuslabel</td><td>{{REST:slot/1/status_label}}</td></tr>
+    <tr><td>Slot 1 Lieferdatum</td><td>{{REST:slot/1/eta}}</td></tr>
+</table>
+<p><b>Felder:</b> <code>q=summary</code>: <code>active</code>, <code>announced</code>, <code>in_transit</code>, <code>out_for_delivery</code>, <code>pickup_ready</code>, <code>exception</code>, <code>delivered_today</code>, <code>arriving_today</code>, <code>next_eta</code>. <code>q=slot&amp;n=1…</code>: <code>used</code>, <code>provider</code>, <code>description</code>, <code>status_code</code>, <code>status</code>, <code>status_label</code>, <code>status_text</code>, <code>eta</code> (JJJJ-MM-TT), <code>tracking_number</code>. Slots gibt es so viele, wie unter <i>Einstellungen → MQTT → Anzahl Slots</i> eingestellt.</p>
+<p><b>Antwortcodes:</b> 200 OK · 400 unbekanntes Feld oder ungültiger Slot · 403 REST ausgeschaltet oder Token falsch · 503 noch keine Daten.</p>
+
+<h4>Empfohlene Loxone-Eingänge</h4>
+<table class="pt-table">
+    <tr><th>Name in Loxone</th><th>Baustein</th><th>Abfrage (an {{API_URL}} anhängen)</th></tr>
+    <tr><td>Paket_Anzahl_Aktiv</td><td>HTTP-Eingang (Zahl)</td><td>{{QUERY:summary/active}}</td></tr>
+    <tr><td>Paket_In_Zustellung</td><td>HTTP-Eingang (Zahl)</td><td>{{QUERY:summary/out_for_delivery}}</td></tr>
+    <tr><td>Paket_Heute_Zugestellt</td><td>HTTP-Eingang (Zahl)</td><td>{{QUERY:summary/delivered_today}}</td></tr>
+    <tr><td>Paket1_Aktiv</td><td>HTTP-Eingang (0/1)</td><td>{{QUERY:slot/1/used}}</td></tr>
+    <tr><td>Paket1_Status</td><td>HTTP-Eingang (0–7)</td><td>{{QUERY:slot/1/status_code}}</td></tr>
+    <tr><td>Paket1_Anbieter</td><td>Texteingang</td><td>{{QUERY:slot/1/provider}}</td></tr>
+    <tr><td>Paket1_Beschreibung</td><td>Texteingang</td><td>{{QUERY:slot/1/description}}</td></tr>
+    <tr><td>Paket1_Lieferdatum</td><td>Texteingang</td><td>{{QUERY:slot/1/eta}}</td></tr>
+    <tr><td>Paket2_Aktiv</td><td>HTTP-Eingang (0/1)</td><td>{{QUERY:slot/2/used}}</td></tr>
+    <tr><td>Paket2_Status</td><td>HTTP-Eingang (0–7)</td><td>{{QUERY:slot/2/status_code}}</td></tr>
+    <tr><td>Paket2_Anbieter</td><td>Texteingang</td><td>{{QUERY:slot/2/provider}}</td></tr>
+    <tr><td>Paket2_Beschreibung</td><td>Texteingang</td><td>{{QUERY:slot/2/description}}</td></tr>
+    <tr><td>Paket2_Lieferdatum</td><td>Texteingang</td><td>{{QUERY:slot/2/eta}}</td></tr>
+    <tr><td>Paket3_Aktiv</td><td>HTTP-Eingang (0/1)</td><td>{{QUERY:slot/3/used}}</td></tr>
+    <tr><td>Paket3_Status</td><td>HTTP-Eingang (0–7)</td><td>{{QUERY:slot/3/status_code}}</td></tr>
+    <tr><td>Paket3_Anbieter</td><td>Texteingang</td><td>{{QUERY:slot/3/provider}}</td></tr>
+    <tr><td>Paket3_Beschreibung</td><td>Texteingang</td><td>{{QUERY:slot/3/description}}</td></tr>
+    <tr><td>Paket3_Lieferdatum</td><td>Texteingang</td><td>{{QUERY:slot/3/eta}}</td></tr>
+</table>
+
+<h4>Zahl in Loxone Config: virtueller HTTP-Eingang</h4>
+<ol>
+    <li>Peripherie → <b>Virtuelle Eingänge</b> → <b>Virtueller HTTP Eingang</b>. Bezeichnung z.B. <code>Paket_Anzahl_Aktiv</code>, URL = fertige Adresse von oben, Abfragezyklus <code>300</code> s.</li>
+    <li>Darunter <b>Virtueller HTTP Eingang Befehl</b>, Befehlserkennung <code>\v</code>. Den Befehl in die Programmierung ziehen.</li>
+</ol>
+<p>Alternative mit nur einer Abfrage für alle Zahlen: URL <code>{{API_URL}}?q=summary&amp;format=text&amp;token=…</code> und je Wert ein Befehl, z.B. <code>summary.active=\v</code>.</p>
+
+<h4>Text in Loxone</h4>
+<p>Virtuelle HTTP-Eingänge in Loxone werten nur <b>Zahlen</b> aus (<code>\v</code>). Texte (Anbieter, Beschreibung, Statuslabel, Lieferdatum) kann der Miniserver nicht selbst per HTTP abholen. Ein <b>virtueller Texteingang</b> wird immer von außen beschrieben, z.B. vom MQTT Gateway. Die Text-Adressen oben eignen sich zum Prüfen im Browser und für andere Systeme (z.B. Node-RED, Skripte).</p>
 </div>
 
 <div data-role="collapsible">

@@ -1,6 +1,6 @@
 # Pakettracker für LoxBerry – Benutzeranleitung
 
-Version 0.2.2 · Autor: ToRe90 · Kontakt: existenzz-cod2@gmx.de
+Version 0.2.3 · Autor: ToRe90 · Kontakt: existenzz-cod2@gmx.de
 
 Diese Anleitung richtet sich an Anwender, die das Plugin einrichten und nutzen möchten. Programmierkenntnisse sind nicht nötig. Für einige Schritte (Logs per SSH, Backup) sind Grundkenntnisse im Umgang mit dem LoxBerry hilfreich.
 
@@ -78,10 +78,10 @@ Fällt ein Paketdienst oder das Postfach aus, arbeiten alle anderen Teile normal
 
 ## 3. Installation
 
-1. Laden Sie die Datei `pakettracker-<Version>.zip` herunter (z.B. `pakettracker-0.2.2.zip`). **Entpacken Sie sie nicht.**
+1. Laden Sie die Datei `pakettracker-<Version>.zip` herunter (z.B. `pakettracker-0.2.3.zip`). **Entpacken Sie sie nicht.**
 2. Öffnen Sie die LoxBerry-Weboberfläche und gehen Sie zu **Plugin-Verwaltung**.
 3. Wählen Sie unter *Plugin installieren oder aktualisieren* die ZIP-Datei aus und klicken Sie auf **Installieren**.
-4. Warten Sie, bis die Installation abgeschlossen ist. Im Installationsprotokoll sollten am Ende Meldungen mit **OK** stehen, z.B. „Pakettracker 0.2.2 installiert“.
+4. Warten Sie, bis die Installation abgeschlossen ist. Im Installationsprotokoll sollten am Ende Meldungen mit **OK** stehen, z.B. „Pakettracker 0.2.3 installiert“.
    - Erscheint eine **Warnung** zu `python3-paho-mqtt`, konnte das MQTT-Modul nicht installiert werden. Das Plugin funktioniert trotzdem, nur ohne MQTT. Siehe [Fehlersuche](#22-logs-und-fehlersuche).
 5. Das Plugin erscheint jetzt in der Plugin-Liste. Ein Klick darauf öffnet die Plugin-Oberfläche.
 
@@ -566,7 +566,7 @@ In **Loxone Config**:
 
 ### 19.5 Alternative ohne MQTT: virtueller HTTP-Eingang
 
-Siehe [Abschnitt 20.3](#203-beispiel-für-loxone-virtueller-http-eingang).
+Siehe [Abschnitt 20.4](#204-beispiel-für-loxone-virtueller-http-eingang).
 
 ---
 
@@ -602,19 +602,60 @@ providers.dhl.active=2
 providers.dhl.error=
 ```
 
+### 20.3 Einzelwerte für Loxone (ab 0.2.3)
+
+Mit `&field=…` liefert die API **genau einen Wert**, ohne Feldnamen, ohne JSON und ohne HTML. So braucht Loxone keine Befehlserkennung mit Schlüssel und keine JSON-Auswertung.
+
+| Adresse (an `http://<loxberry>/plugins/pakettracker/api.php` anhängen) | Antwort (Beispiel) |
+|---|---|
+| `?q=summary&field=active&format=text&token=…` | `2` |
+| `?q=summary&field=out_for_delivery&format=text&token=…` | `1` |
+| `?q=summary&field=delivered_today&format=text&token=…` | `0` |
+| `?q=slot&n=1&field=used&format=text&token=…` | `1` |
+| `?q=slot&n=1&field=status_code&format=text&token=…` | `3` |
+| `?q=slot&n=1&field=provider&format=text&token=…` | `dhl` |
+| `?q=slot&n=1&field=description&format=text&token=…` | `Bücher & Kaffeetasse` |
+| `?q=slot&n=1&field=status_label&format=text&token=…` | `In Zustellung` |
+| `?q=slot&n=1&field=eta&format=text&token=…` | `2026-10-03` |
+
+Mögliche Felder:
+- **`q=summary`:** `active`, `announced`, `in_transit`, `out_for_delivery`, `pickup_ready`, `exception`, `delivered_today`, `arriving_today`, `next_eta`
+- **`q=slot&n=<Nummer>`:** `used`, `provider`, `description`, `status_code`, `status`, `status_label`, `status_text`, `eta` (Format JJJJ-MM-TT), `tracking_number`
+
+Regeln für `format=text`:
+- Die Antwort ist UTF-8-Klartext und endet mit genau einem Zeilenumbruch.
+- Leerzeichen am Anfang und Ende werden entfernt, Zeilenumbrüche im Text werden zu Leerzeichen.
+- HTML-Entities wie `&amp;` oder `&#x20;` werden in normale Zeichen umgewandelt.
+- **Leerer Slot:** Zahlenfelder (`used`, `status_code`) liefern `0`, Textfelder eine leere Antwort.
+- Ohne `&format=text` kommt JSON, z.B. `{"q":"slot","n":1,"field":"status_code","value":3}`.
+
+Fertige Adressen mit Ihrer LoxBerry-Adresse und, falls nötig, Ihrem Token stehen im Plugin unter **Hilfe → Loxone per HTTP/REST**.
+
 | Antwortcode | Bedeutung |
 |---|---|
 | 200 | OK |
-| 403 | Token fehlt oder ist falsch |
-| 404 | REST-Schnittstelle ausgeschaltet bzw. Slot nicht vorhanden |
+| 400 | Unbekannte Abfrage, unbekanntes Feld oder ungültiger Slot (bei `field=…`) |
+| 403 | REST-Schnittstelle ausgeschaltet, oder Token fehlt bzw. ist falsch |
+| 404 | Slot nicht vorhanden (nur bei Abfragen ohne `field=…`) |
+| 405 | Andere Methode als GET (die API ist nur lesend) |
 | 503 | Noch keine Daten vorhanden (es lief noch keine Aktualisierung) oder kein Token konfiguriert |
 
-### 20.3 Beispiel für Loxone: virtueller HTTP-Eingang
+Bis Version 0.2.2 hat eine ausgeschaltete REST-Schnittstelle mit 404 geantwortet, ab 0.2.3 mit 403.
 
-1. In Loxone Config einen **virtuellen HTTP-Eingang** anlegen:
-   - URL: `http://<loxberry>/plugins/pakettracker/api.php?q=summary&format=text&token=<IHR-TOKEN>`
+### 20.4 Beispiel für Loxone: virtueller HTTP-Eingang
+
+**Ein Wert je Eingang (empfohlen):**
+
+1. Loxone Config → **Peripherie** → **Virtuelle Eingänge** markieren → **Virtueller HTTP Eingang**:
+   - Bezeichnung: z.B. `Paket_Anzahl_Aktiv`
+   - URL: `http://<loxberry>/plugins/pakettracker/api.php?q=summary&field=active&format=text&token=<IHR-TOKEN>`
    - Abfragezyklus: `300` Sekunden (das Plugin aktualisiert ohnehin nur alle paar Minuten)
-2. Darunter je Wert einen **virtuellen HTTP-Eingang Befehl** anlegen:
+2. Den neuen Eingang markieren → **Virtueller HTTP Eingang Befehl**:
+   - Bezeichnung: `Paket_Anzahl_Aktiv`
+   - Befehlserkennung: `\v`
+3. Den Befehl in die Programmierung ziehen, in den Miniserver speichern.
+
+**Alle Zahlen mit einer Abfrage:** URL `…/api.php?q=summary&format=text&token=<IHR-TOKEN>`, darunter je Wert ein Befehl:
 
 | Bezeichnung | Befehlserkennung |
 |---|---|
@@ -622,9 +663,22 @@ providers.dhl.error=
 | Pakete heute | `summary.out_for_delivery=\v` |
 | Pakete abholbereit | `summary.pickup_ready=\v` |
 
-Für einen Slot verwenden Sie die URL mit `q=slot&n=1&format=text` und z.B. die Befehlserkennung `status_code=\v`.
+Empfohlene Eingänge:
 
-**Einschränkung:** Virtuelle HTTP-Eingänge in Loxone lesen nur **Zahlen**. Texte wie Beschreibung oder Statustext gibt es nur über MQTT.
+| Name in Loxone | Abfrage | Loxone-Baustein |
+|---|---|---|
+| Paket_Anzahl_Aktiv | `q=summary&field=active` | virtueller HTTP-Eingang (Zahl) |
+| Paket_In_Zustellung | `q=summary&field=out_for_delivery` | virtueller HTTP-Eingang (Zahl) |
+| Paket_Heute_Zugestellt | `q=summary&field=delivered_today` | virtueller HTTP-Eingang (Zahl) |
+| Paket1_Aktiv | `q=slot&n=1&field=used` | virtueller HTTP-Eingang (0/1) |
+| Paket1_Status | `q=slot&n=1&field=status_code` | virtueller HTTP-Eingang (0–7) |
+| Paket1_Anbieter | `q=slot&n=1&field=provider` | virtueller Texteingang |
+| Paket1_Beschreibung | `q=slot&n=1&field=description` | virtueller Texteingang |
+| Paket1_Lieferdatum | `q=slot&n=1&field=eta` | virtueller Texteingang |
+
+Für Paket 2 und 3 gilt dasselbe mit `n=2` bzw. `n=3`. An jede Abfrage `&format=text&token=<IHR-TOKEN>` anhängen.
+
+**Einschränkung:** Virtuelle HTTP-Eingänge in Loxone lesen nur **Zahlen**. Einen Text kann der Miniserver nicht selbst per HTTP abholen. Ein virtueller Texteingang wird immer von außen beschrieben, z.B. vom MQTT Gateway. Die Text-Adressen eignen sich zum Prüfen im Browser und für andere Systeme (Node-RED, Skripte).
 
 ---
 
@@ -715,6 +769,8 @@ python3 pakettracker.py test dhl            # DHL-Key testen (verbraucht 1 Abfra
 4. Nach dem Update kurz prüfen: Seite **Anbieter** und **Status → Jetzt aktualisieren**.
 
 Technischer Hintergrund: Der LoxBerry-Installer löscht bei einem Update die Konfigurations- und Datenordner des Plugins. Das Plugin sichert sie deshalb vorher selbst nach `/tmp` und spielt sie nach der Installation zurück. Neue Einstellungen einer neuen Version erhalten automatisch ihre Standardwerte.
+
+**Update von 0.2.2 auf 0.2.3:** Neue Einzelwert-Abfragen der REST-API für Loxone und der Abschnitt *Hilfe → Loxone per HTTP/REST*. Bestehende REST-Adressen funktionieren unverändert. Einzige Änderung: Ist die REST-Schnittstelle ausgeschaltet, antwortet sie jetzt mit 403 statt 404. Es ist nichts weiter zu tun.
 
 **Update von 0.2.1 auf 0.2.2:** Dokumentation (Hinweis zu leeren MQTT-Werten) und Vorbereitung der automatischen Updates. Es ist nichts weiter zu tun; ab jetzt können Updates automatisch kommen.
 

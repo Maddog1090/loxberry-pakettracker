@@ -47,6 +47,24 @@
 </div>
 
 <div data-role="collapsible">
+<h3>Loxone via HTTP/REST</h3>
+{{REST_STATUS}}
+<p>Each address returns <b>exactly one value</b> as plain UTF-8 text (no field name, no JSON/HTML, no surrounding spaces), e.g. <code>2</code>. An empty slot returns <code>0</code> for numbers and an empty answer for texts.</p>
+<table class="pt-table">
+    <tr><th>Value</th><th>Address</th></tr>
+    <tr><td>Active parcels</td><td>{{REST:summary/active}}</td></tr>
+    <tr><td>Out for delivery</td><td>{{REST:summary/out_for_delivery}}</td></tr>
+    <tr><td>Slot 1 carrier</td><td>{{REST:slot/1/provider}}</td></tr>
+    <tr><td>Slot 1 description</td><td>{{REST:slot/1/description}}</td></tr>
+    <tr><td>Slot 1 status code (0–7)</td><td>{{REST:slot/1/status_code}}</td></tr>
+    <tr><td>Slot 1 status label</td><td>{{REST:slot/1/status_label}}</td></tr>
+    <tr><td>Slot 1 delivery date</td><td>{{REST:slot/1/eta}}</td></tr>
+</table>
+<p>Recommended Loxone inputs: <code>Paket_Anzahl_Aktiv</code> {{QUERY:summary/active}}, <code>Paket_In_Zustellung</code> {{QUERY:summary/out_for_delivery}}, <code>Paket_Heute_Zugestellt</code> {{QUERY:summary/delivered_today}}, per slot <i>n</i> = 1…3: <code>Paket<i>n</i>_Aktiv</code> (<code>used</code>), <code>Paket<i>n</i>_Status</code> (<code>status_code</code>) as virtual HTTP inputs with command <code>\v</code>; <code>Paket<i>n</i>_Anbieter</code> (<code>provider</code>), <code>Paket<i>n</i>_Beschreibung</code> (<code>description</code>), <code>Paket<i>n</i>_Lieferdatum</code> (<code>eta</code>) as virtual text inputs.</p>
+<p>Loxone virtual HTTP inputs read <b>numbers only</b>. The Miniserver cannot fetch texts by itself; a virtual text input is always written from outside (e.g. by the MQTT Gateway). The text addresses are meant for checking in a browser and for other systems. Codes: 200 OK · 400 unknown field or invalid slot · 403 REST off or wrong token · 503 no data yet.</p>
+</div>
+
+<div data-role="collapsible">
 <h3>Security, logs, backup</h3>
 <ul>
     <li>Credentials are stored on the LoxBerry only (0600), never shown again and never logged. Empty password field = keep value.</li>

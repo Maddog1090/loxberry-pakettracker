@@ -1,9 +1,7 @@
 <?php
 /** Einstellungen: Allgemein, MQTT, REST, E-Mail-Eingang (mit Test) und alle Anbieter (mit Test). */
 
-$token = $describe['values']['rest']['token'] ?? '';
-$host = $_SERVER['HTTP_HOST'] ?? 'loxberry';
-$api = "http://$host/plugins/" . LBPPLUGINDIR . "/api.php";
+$api = pt_api_base();
 $base = $describe['values']['mqtt']['base_topic'] ?? 'pakettracker';
 $providers = pt_providers($describe);
 ?>
@@ -59,8 +57,9 @@ $providers = pt_providers($describe);
 
 <h3><?= pt_h($L['SETTINGS.REST_EXAMPLES']) ?></h3>
 <ul>
-    <?php foreach (['summary&format=text', 'slot&n=1&format=text', 'all'] as $q): ?>
-        <?php $url = "$api?q=$q" . ($token !== '' ? '&token=' . rawurlencode($token) : ''); ?>
+    <?php foreach (['q=summary&format=text', 'q=slot&n=1&format=text', 'q=summary&field=active&format=text',
+                    'q=slot&n=1&field=description&format=text', 'q=all'] as $q): ?>
+        <?php $url = pt_rest_url($api, $q, $describe['values']['rest'] ?? []); ?>
         <li><a href="<?= pt_h($url) ?>" target="_blank" rel="noopener"><code><?= pt_h($url) ?></code></a></li>
     <?php endforeach; ?>
 </ul>
