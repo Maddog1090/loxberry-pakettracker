@@ -37,7 +37,7 @@
 <div data-role="collapsible">
 <h3>Carriers</h3>
 <ul>
-    <li><b>DHL</b> (API, e-mail optional): developer.dhl.com → My Apps → app with "Shipment Tracking – Unified" → Consumer Key → <i>Settings → Carriers → DHL</i>. No e-mail input needed: add the tracking number under <i>Shipments</i>.</li>
+    <li><b>DHL</b> (API, e-mail optional): <b>Shipment Tracking – Unified</b> (default): developer.dhl.com → My Apps → app with "Shipment Tracking – Unified" → Consumer Key → <i>Settings → Carriers → DHL</i>. No e-mail input needed: add the tracking number under <i>Shipments</i>. Optional <b>Parcel DE Tracking</b> (DHL Paket Germany): have the app enabled for "Parcel DE Tracking (Post &amp; Parcel Germany)" – DHL activates production use –, enter the <b>API secret</b>, tracking user/password only if DHL issued them. <i>DHL interface: Automatic</i> then uses Parcel DE and falls back to Unified if access is rejected. With the recipient postcode Parcel DE adds e.g. location and branch/Packstation.</li>
     <li><b>UPS</b> (API + e-mail): developer.ups.com → Apps with product "Tracking" → Client ID and Secret → <i>Settings → Carriers → UPS</i>.</li>
     <li><b>Amazon, Hermes, DPD, GLS</b> (e-mail only): enable e-mail notifications at the carrier and set up the e-mail input.</li>
     <li>A manually selected carrier always wins over automatic detection. 12- and 14-digit numbers are ambiguous.</li>

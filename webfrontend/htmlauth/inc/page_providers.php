@@ -68,6 +68,27 @@ $email = $state['email'] ?? [];
                 <?php elseif (!$live): ?>
                     <?= pt_h($L['PROVIDERS.LIVE_DISABLED']) ?>
                 <?php else: ?>
+                    <?php if (array_key_exists('live_api', $p)):
+                        // DHL: welche Schnittstelle (Parcel DE / Unified) genutzt wird – „aktiv“ erst nach einer Antwort
+                        $labels = [];
+                        foreach ($section['fields'] as $f) {
+                            $labels[$f['key']] = preg_replace('/\s*\(.*$/', '', $f['label']);
+                        }
+                        $missing = array_map(function ($k) use ($labels) { return $labels[$k] ?? $k; }, $p['live_missing'] ?? []); ?>
+                        <?php if ($missing): ?>
+                            <span class="pt-error-text"><?= pt_h(sprintf($L['PROVIDERS.API_INCOMPLETE'], implode(', ', $missing))) ?></span><br>
+                        <?php elseif (!empty($p['live_api_confirmed'])): ?>
+                            <strong><?= pt_h(sprintf($L['PROVIDERS.API_ACTIVE'], $p['live_api_label'] ?? '')) ?></strong><br>
+                        <?php else: ?>
+                            <?= pt_h(sprintf($L['PROVIDERS.API_UNCONFIRMED'], $p['live_api_label'] ?? '')) ?><br>
+                        <?php endif; ?>
+                        <?php if (!empty($p['parcel_de_error'])): ?>
+                            <span class="pt-error-text"><?= pt_h($p['parcel_de_error']) ?></span><br>
+                            <?php if (!empty($p['parcel_de_paused_until'])): ?>
+                                <?= pt_h(sprintf($L['PROVIDERS.PARCEL_PAUSED'], pt_fmt_time($p['parcel_de_paused_until']))) ?><br>
+                            <?php endif; ?>
+                        <?php endif; ?>
+                    <?php endif; ?>
                     <?= pt_h($L['PROVIDERS.LIVE_LAST']) ?>: <strong><?= pt_h(pt_fmt_time($p['live_last_success'] ?? '')) ?></strong>
                     <?php if (!empty($p['live_error'])): ?><br><span class="pt-error-text"><?= pt_h($p['live_error']) ?></span><?php endif; ?>
                 <?php endif; ?>

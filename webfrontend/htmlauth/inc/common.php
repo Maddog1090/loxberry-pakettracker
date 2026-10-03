@@ -303,7 +303,7 @@ function pt_render_field(string $sid, array $field, array $describe, array $L): 
             $input = '<select id="' . $id . '" name="' . pt_h($name) . '">';
             foreach ($field['options'] as $opt) {
                 $input .= '<option value="' . pt_h($opt) . '"' . ($opt === $value ? ' selected' : '') . '>'
-                    . pt_h($opt) . '</option>';
+                    . pt_h(pt_label($L, 'OPTION.' . strtoupper($opt), $opt)) . '</option>';
             }
             $input .= '</select>';
             break;

@@ -85,4 +85,5 @@ class Health:
             "last_success": last_success,
             "error": error,
             "health": health,
+            **provider.live_details(),
         }

@@ -4,6 +4,23 @@ Alle nennenswerten Änderungen am Plugin. Format nach [Keep a Changelog](https:/
 
 > Die Versionen bis einschließlich 0.2.2 entstanden am 2026-10-02 während der Entwicklung und wurden nicht öffentlich veröffentlicht. Die Datumsangaben sind die Build-Daten. 0.2.2 ist die erste zur Veröffentlichung vorgesehene Version.
 
+## [1.0.2] – 2026-10-03
+
+### Hinzugefügt
+- DHL: optionale Anbindung von **Parcel DE Tracking (Post & Parcel Germany)**, der offiziellen DHL-Paket-Deutschland-Sendungsverfolgung – „public“-Abfrage `get-status-for-public-user` mit XML-Request/-Antwort, API-Key + API-Secret als Basic Auth, optional Benutzerkennung/Passwort (falls von DHL vergeben) und Empfänger-PLZ. Statuszuordnung über DHL-Zustell-/Rücksende-Flag, ICE-Ereigniscodes (Codeliste 05/2026), Statustext und Standard-Ereigniscode; Sendungsverlauf mit Ort, Zustelltag/-zeitfenster soweit DHL sie liefert. XML wird sicher verarbeitet (keine DTD/Entities).
+- Neue DHL-Einstellungen: *DHL-Schnittstelle* (Automatisch / Parcel DE Tracking / Shipment Tracking – Unified), *API-Secret*, *Tracking-Benutzerkennung*, *Tracking-Passwort* – alle Zugangsdaten in `credentials.json`.
+- Automatik: Parcel DE, sobald ein API-Secret hinterlegt ist, sonst Unified. Lehnt DHL den Parcel-DE-Zugang ab, wird Parcel DE 6 Stunden pausiert und die Abfrage einmal über Unified gestellt; sonst keine Doppelabfragen.
+- Anbieter-Seite: welche DHL-Schnittstelle aktiv ist („Parcel DE Tracking aktiv“ / „Shipment Tracking – Unified aktiv“ erst nach erfolgreicher Antwort), fehlende Angaben, Parcel-DE-Fehler und Pause.
+- DHL-Verbindungstest prüft jede konfigurierte Schnittstelle einzeln (✓/✗ je Schritt) und nutzt dafür eine aktive eigene DHL-Sendung, falls vorhanden.
+- Auswahlfelder der Einstellungen zeigen verständliche Bezeichnungen (de/en).
+
+### Geändert
+- HTTP 401/403 von DHL: Die Meldung nennt die möglichen Ursachen (Key/Secret, Freigabe der App für die gewählte Schnittstelle, Produktions- statt Sandbox-Key), ohne eine bestimmte zu behaupten – das DHL-Gateway unterscheidet sie nicht.
+- Feld „API-Key (Shipment Tracking – Unified)“ heißt jetzt „API-Key (DHL Developer App)“; der gespeicherte Key bleibt erhalten. Bestehende Installationen fragen unverändert Unified ab.
+
+### Hinweis
+- Laut DHL schaltet DHL die produktive Nutzung von Parcel DE Tracking frei; je nach Abschnitt der Dokumentation sind zusätzlich Benutzerkennung und Passwort von DHL nötig. Getestet ist die Anbindung gegen nachgebildete DHL-Antworten, nicht gegen einen freigeschalteten Produktivzugang.
+
 ## [1.0.1] – 2026-10-03
 
 ### Behoben

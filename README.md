@@ -2,7 +2,7 @@
 
 **Paketverfolgung für Loxone:** Pakettracker sammelt Ankündigungen und Sendungsstatus von **DHL, Amazon, Hermes, DPD, GLS und UPS** und stellt sie dem Loxone Miniserver über **MQTT** (und optional REST) bereit – z.B. für „Heute kommt ein Paket“ in der Loxone-App oder eine Erinnerung, ein Paket abzuholen.
 
-**Version 1.0.1** · LoxBerry ≥ 3.0 (getestet mit 4.0) · Autor: ToRe90 · [MIT-Lizenz](LICENSE)
+**Version 1.0.2** · LoxBerry ≥ 3.0 (getestet mit 4.0) · Autor: ToRe90 · [MIT-Lizenz](LICENSE)
 
 📖 **Ausführliche Anleitung (Deutsch): [docs/ANLEITUNG_DE.md](docs/ANLEITUNG_DE.md)** – auf dem LoxBerry unter Plugin → **Hilfe** → **Ausführliche Anleitung öffnen**.
 
@@ -12,7 +12,7 @@
 
 | Anbieter | Datenquelle | Was Sie brauchen |
 |---|---|---|
-| **DHL** | Offizielle API, E-Mail optional | kostenloser API-Key (developer.dhl.com) – funktioniert für manuell eingetragene Nummern **ohne E-Mail-Eingang**; zusätzlich/alternativ E-Mail-Eingang |
+| **DHL** | Offizielle APIs (Shipment Tracking – Unified, optional Parcel DE Tracking), E-Mail optional | kostenloser API-Key (developer.dhl.com) – funktioniert für manuell eingetragene Nummern **ohne E-Mail-Eingang**. Parcel DE Tracking zusätzlich mit API-Secret, nach Freischaltung durch DHL ([Anleitung 11](docs/ANLEITUNG_DE.md#11-dhl-einrichten)) |
 | **UPS** | Offizielle API (OAuth) + E-Mail | kostenlose Client-ID + Secret (developer.ups.com) und/oder E-Mail-Eingang |
 | **Amazon** | E-Mail (IMAP) | E-Mail-Eingang |
 | **Hermes** | E-Mail (IMAP) + optionale Live-Abfrage (myhermes.de, inoffiziell) | E-Mail-Eingang und/oder Live-Abfrage einschalten |

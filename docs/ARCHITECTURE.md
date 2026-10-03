@@ -94,13 +94,37 @@ Am 02.10.2026 mit der offiziellen Doku auf developer.dhl.com abgeglichen:
 | ungültiges JSON / keine `shipments` | nein | ja | WARNING |
 | 400 | nein | ja | WARNING |
 | 404 | nein | ja | INFO, Daten bleiben |
-| 401/403 | ja | nein (nach Key-Korrektur sofort wieder abfragbar) | ERROR |
+| 401/403 | ja | nein (nach Key-Korrektur sofort wieder abfragbar) | ERROR; Meldung nennt mögliche Ursachen, ohne zu raten |
 | 429 | ja + Pause (`Retry-After` oder 30 min) | nein | WARNING |
 | 5xx, Timeout (15 s), Netzwerk | ja | nein | WARNING |
 
 **Ohne E-Mail (seit 1.0.1 dokumentiert und getestet):** Die Live-Abfrage hängt nicht am E-Mail-Eingang. Eine manuell eingetragene Nummer (`tracked.json`) wird mit API-Key direkt abgefragt; `health.provider_info` meldet dann `source = "api"`, `live = true`. Am 03.10.2026 erneut mit developer.dhl.com abgeglichen (Endpoint, Header, Free-Tier-Limit unverändert); es wird weiterhin ausschließlich die Unified API genutzt, bestehende API-Keys gelten unverändert. Zusätzlich ordnet `map_api_shipment` Texte zu Zustellversuch (→ 6), Packstation/Filiale zur Abholung (→ 5) und Rücksendung (→ 7) ein.
 
 Der Zustand (Tageszähler, letzte Abfrage je Sendung, Pause) liegt in `data/provider_state.json` und übersteht Upgrades über das bestehende Backup. Der Testmodus nutzt diesen Pfad nicht. Beim Wechsel aus dem Testmodus verwirft die Engine die simulierten Statusdaten einmalig.
+
+## DHL Parcel DE Tracking (seit 1.0.2)
+
+Am 03.10.2026 mit der DHL-Doku „DHL Paket DE Sendungsverfolgung (Post & Paket Deutschland)“, DHLs Postman-Sammlung und der ICE/RIC-Codeliste (05/2026) abgeglichen.
+
+| Punkt | Wert laut DHL | Umsetzung |
+|---|---|---|
+| Endpoint | Produktion `https://api-eu.dhl.com/parcel/de/tracking/v0/shipments`, Sandbox `https://api-sandbox.dhl.com/…` | nur Produktion – die Sandbox kann die public-Abfrage laut DHL nicht |
+| Gateway | API-Key + API-Secret als Basic Auth; Postman zusätzlich Header `dhl-api-key` | beides (`api_key`, `api_secret` aus `credentials.json`) |
+| Abfrage | `GET ?xml=<data request="get-status-for-public-user" language-code=… [appname password]><data piece-code=… [zip-code]/></data>` | XML mit ElementTree gebaut (Werte maskiert); `appname`/`password` nur, wenn beide hinterlegt; PLZ nur bei 5 Ziffern |
+| Zugang | Doku widersprüchlich: Abschnitt „Authentifizierung“ – Key/Secret reichen für public; „Zugangsvoraussetzungen“/I/O-Referenz – Benutzerkennung + Passwort vom DHL-Kundenberater; „Die produktive Verwendung wird durch DHL freigeschaltet“ | Benutzerkennung/Passwort optional; Oberfläche meldet „aktiv“ erst nach erfolgreicher Antwort |
+| Antwort | XML: `<data name="piece-status-public-list" code=…>` → `<data name="piece-status-public" …/>`, Ereignisse mit `event-timestamp` | DTD/Entities werden abgelehnt (XXE), Größe begrenzt; Ereignisse überall im Baum gesucht, neueste zuerst |
+| Status | `delivery-event-flag`, `ruecksendung`, `ice`, `standard-event-code`, `status` | Reihenfolge: Zustell-/Rücksende-Flag → eindeutige ICE-Codes → Statustext → Standard-Ereigniscode → „unterwegs“ |
+| Termin | `delivery-date`, `delivery-timeframe-from/-to` – „gesondertes Recht erforderlich“ | nur übernommen, wenn geliefert |
+| Fehlercodes | 5/6 Anmeldung, 62/64 Berechtigung, 57 PLZ, 100/200 keine Daten, 41/45/59 Nummer, < 0 technisch | 5/6/62/64 wie HTTP 401/403 (Abbruch, ggf. Fallback); 100/200 INFO, Daten bleiben; < 0 Abbruch für den Lauf |
+| Limit | 1000/Tag, 3/s, zugestellte nicht erneut abfragen | gemeinsame Drosselung mit Unified (`ApiProvider`, `provider_state.json`) |
+
+**Auswahl und Fallback** (`DhlProvider._plan`): Modus `auto` (Standard) → `[parcel_de, unified]`, wenn ein API-Secret hinterlegt und Parcel DE nicht pausiert ist, sonst `[unified]`. Nur ein `_AuthError` (Gateway 401/403, Codes 5/6/62/64) bei Parcel DE führt zur zweiten Abfrage über Unified und pausiert Parcel DE für 6 h (`parcel_de_paused_until`, `parcel_de_error` in `provider_state.json`). Modi `parcel_de`/`unified` nutzen genau eine Schnittstelle. Bestehende Installationen (nur API-Key) bleiben damit unverändert bei Unified.
+
+**Anzeige** (`DhlProvider.live_details` → `health.provider_info`): `live_api`, `live_api_label`, `live_api_confirmed` (erfolgreiche Antwort dieser Schnittstelle in `last_api_success`), `live_missing`, `parcel_de_configured`, `parcel_de_error`, `parcel_de_paused_until`. Keine neuen MQTT-Topics.
+
+**Verbindungstest:** testet jede konfigurierte Schnittstelle; `pakettracker.py test dhl` übergibt eine aktive eigene DHL-Sendung aus `state.json`, sonst eine nicht existierende Testnummer (Unified 404 bzw. Parcel DE Code 100 = Zugang in Ordnung).
+
+**Nicht genutzt:** die Business-Abfragen `d-get-piece-detail`/`d-get-signature` (nur Sendungen aus dem Nummernkreis eines Geschäftskunden, GKP-Benutzer mit „Verfolgen Paket & Waren“) sowie jede Form von Scraping oder nicht dokumentierten Endpunkten.
 
 ## UPS-Live-Tracking (seit 0.2.0)
 

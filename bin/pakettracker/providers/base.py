@@ -138,6 +138,10 @@ class Provider(ABC):
             return "none"
         return "ok" if all(str(self.settings.get(k) or "").strip() for k in self.required_secrets) else "missing"
 
+    def live_details(self) -> dict:
+        """Zusatzangaben zur Live-Abfrage für Oberfläche/REST (z.B. welche DHL-Schnittstelle aktiv ist)."""
+        return {}
+
     def test_connection(self) -> str:
         """Prüft Zugangsdaten/Erreichbarkeit; liefert eine Meldung oder wirft ProviderError."""
         raise ProviderError(f"{self.name}: kein Verbindungstest verfügbar")

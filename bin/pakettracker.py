@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from pakettracker import config, engine, registry  # noqa: E402
 from pakettracker.loxberry import Paths, get_paths  # noqa: E402
+from pakettracker.outputs import statefile  # noqa: E402
 from pakettracker.providers.base import Provider  # noqa: E402
 from pakettracker.util import read_json, write_json  # noqa: E402
 
@@ -81,7 +82,13 @@ def cmd_test(cfg: config.Config, paths: Paths, target: str) -> dict:
     state = states.setdefault(cls.id, {}) if isinstance(states.get(cls.id, {}), dict) else {}
     provider = cls(cfg.section(f"providers.{cls.id}"), False, log.getChild(cls.id), state=state)
     try:
-        result = {"ok": True, "message": provider.test_connection()}
+        if cls.id == "dhl":
+            # Mit einer eigenen aktiven DHL-Sendung prüft der Test auch echte Sendungsdaten
+            active = [s.tracking_number for s in statefile.load_shipments(paths.state_file)
+                      if s.provider == "dhl" and not s.is_final and not s.tracking_number.startswith("ORDER-")]
+            result = {"ok": True, "message": provider.test_connection(active[0] if active else "")}
+        else:
+            result = {"ok": True, "message": provider.test_connection()}
     except Exception as exc:
         result = {"ok": False, "message": str(exc)}
     try:

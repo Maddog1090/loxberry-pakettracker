@@ -60,7 +60,7 @@
 <h3>Paketdienste einrichten</h3>
 <table class="pt-table">
     <tr><th>Anbieter</th><th>Quelle</th><th>Einrichtung</th></tr>
-    <tr><td>DHL</td><td>API (E-Mail optional)</td><td>developer.dhl.com → <i>My Apps</i> → App mit „Shipment Tracking – Unified“ → nach Freigabe <b>Consumer Key</b> kopieren → <i>Einstellungen → Anbieter → DHL</i> → „Speichern &amp; Verbindung testen“. Kostenlos: 250 Abfragen/Tag, das Plugin drosselt selbst. Kein E-Mail-Eingang nötig: Sendungsnummer unter <i>Sendungen</i> eintragen.</td></tr>
+    <tr><td>DHL</td><td>API (E-Mail optional)</td><td><b>Shipment Tracking – Unified</b> (Standard): developer.dhl.com → <i>My Apps</i> → App mit „Shipment Tracking – Unified“ → nach Freigabe <b>Consumer Key</b> kopieren → <i>Einstellungen → Anbieter → DHL</i> → „Speichern &amp; Verbindung testen“. Kostenlos: 250 Abfragen/Tag, das Plugin drosselt selbst. Kein E-Mail-Eingang nötig: Sendungsnummer unter <i>Sendungen</i> eintragen.<br><b>Parcel DE Tracking</b> (optional, DHL Paket Deutschland): App zusätzlich für „Parcel DE Tracking (Post &amp; Parcel Germany)“ freigeben lassen – die Produktion schaltet DHL frei –, <b>API-Secret</b> eintragen, Benutzerkennung/Passwort nur falls von DHL vergeben. <i>DHL-Schnittstelle: Automatisch</i> nutzt dann Parcel DE und weicht bei abgelehntem Zugang auf Unified aus. Mit Empfänger-PLZ liefert Parcel DE z.B. Ort und Filiale/Packstation.</td></tr>
     <tr><td>UPS</td><td>API + E-Mail</td><td>developer.ups.com → <i>Apps → Add Apps</i> mit Produkt „Tracking“ → <b>Client ID</b> und <b>Client Secret</b> → <i>Einstellungen → Anbieter → UPS</i>, Umgebung „production“ → „Speichern &amp; Verbindung testen“.</td></tr>
     <tr><td>Amazon</td><td>E-Mail</td><td>E-Mail-Eingang einrichten. Erkannt werden Bestellnummer, Artikel, Termin, TBA-Nummer oder die Nummer des ausliefernden Paketdienstes.</td></tr>
     <tr><td>Hermes</td><td>E-Mail</td><td>Benachrichtigungen auf myhermes.de aktivieren, E-Mail-Eingang einrichten.</td></tr>
@@ -177,7 +177,7 @@
 <ul>
     <li>Seite <i>Anbieter</i>: letzter Fehler je Paketdienst. Seite <i>Status</i>: letzte Logzeilen; „Jetzt aktualisieren“ zeigt die komplette Ausgabe.</li>
     <li>Mehr Details: <i>Einstellungen → Allgemein → Loglevel</i> = debug. Logs liegen im Arbeitsspeicher und sind nach einem Neustart leer.</li>
-    <li>„DHL lehnt den API-Key ab“: Key/Freigabe prüfen. „IMAP-Anmeldung fehlgeschlagen“: App-Passwort verwenden, IMAP aktivieren. Keine MQTT-Werte: Broker/Gateway prüfen, bei Gateway V2 Subscription anlegen.</li>
+    <li>„DHL hat die Authentifizierung mit HTTP 401 abgelehnt“ / „Parcel DE Tracking: Zugang abgelehnt“: Key/Secret und Freigabe der App für die gewählte Schnittstelle prüfen (die Ursache ist aus dem Fehler nicht unterscheidbar). „IMAP-Anmeldung fehlgeschlagen“: App-Passwort verwenden, IMAP aktivieren. Keine MQTT-Werte: Broker/Gateway prüfen, bei Gateway V2 Subscription anlegen.</li>
     <li>Falscher Anbieter: Sendung entfernen und manuell wählen.</li>
 </ul>
 </div>

@@ -1,6 +1,6 @@
 # Pakettracker für LoxBerry – Benutzeranleitung
 
-Version 1.0.1 · Autor: ToRe90 · Kontakt: existenzz-cod2@gmx.de
+Version 1.0.2 · Autor: ToRe90 · Kontakt: existenzz-cod2@gmx.de
 
 Diese Anleitung richtet sich an Anwender, die das Plugin einrichten und nutzen möchten. Programmierkenntnisse sind nicht nötig. Für einige Schritte (Logs per SSH, Backup) sind Grundkenntnisse im Umgang mit dem LoxBerry hilfreich.
 
@@ -299,49 +299,93 @@ Für Tests können Sie statt IMAP einen Ordner mit gespeicherten Mails (`.eml`-D
 ## 11. DHL einrichten
 
 DHL-Sendungen kommen auf zwei Wegen ins Plugin:
-- **DHL-Schnittstelle:** Mit einem API-Key fragt das Plugin den aktuellen Status jeder DHL-Sendung direkt bei DHL ab. Das ist genauer und aktueller als die Mails.
+- **DHL-Schnittstelle (API):** Das Plugin fragt den aktuellen Status jeder DHL-Sendung direkt bei DHL ab. Das ist genauer und aktueller als die Mails.
 - **E-Mail (optional):** DHL-Benachrichtigungen („Ihr Paket kommt am …“) werden automatisch erkannt, wenn der E-Mail-Eingang eingerichtet ist.
 
-**DHL ganz ohne E-Mail:** API-Key hinterlegen (11.1/11.2) und die Sendungsnummer unter *Sendungen → Sendung hinzufügen* eintragen (Anbieter „Automatisch erkennen“ oder „DHL“). Das Plugin fragt die Sendung dann regelmäßig direkt bei DHL ab; ein E-Mail-Konto ist nicht nötig. Die Seite *Anbieter* zeigt als Datenquelle „API“ und im Abschnitt *Live-Abfrage* „DHL Live-Tracking: aktiv“ mit der letzten erfolgreichen Abfrage.
+**DHL ganz ohne E-Mail:** Zugangsdaten hinterlegen (11.2–11.4) und die Sendungsnummer unter *Sendungen → Sendung hinzufügen* eintragen (Anbieter „Automatisch erkennen“ oder „DHL“). Das Plugin fragt die Sendung dann regelmäßig direkt bei DHL ab; ein E-Mail-Konto ist nicht nötig.
 
-Übernommen werden, soweit DHL sie liefert: Status, Statustext, Sendungsverlauf (Zeit, Text, Ort), voraussichtlicher Zustelltag und -zeitfenster. Zustellversuche, Abholbereitschaft (Filiale/Packstation) und Rücksendungen erkennt das Plugin am Statustext. Fehlende Angaben werden nicht ergänzt oder geschätzt. Zugestellte Sendungen werden nicht weiter abgefragt. Schlägt eine Abfrage fehl (falscher Key, Netzwerk, Rate-Limit, Wartung), bleiben die zuletzt bekannten Daten erhalten.
+Übernommen werden, soweit DHL sie für Ihren Zugang liefert: Status, Statustext, Sendungsverlauf (Zeit, Text, Ort), voraussichtlicher Zustelltag und -zeitfenster. Fehlende Angaben werden nicht ergänzt oder geschätzt. Zugestellte Sendungen werden nicht weiter abgefragt. Schlägt eine Abfrage fehl (Zugang abgelehnt, Netzwerk, Rate-Limit, Wartung), bleiben die zuletzt bekannten Daten erhalten.
 
-### 11.1 API-Key besorgen
+### 11.1 Zwei DHL-Schnittstellen
+
+| | Shipment Tracking – Unified | Parcel DE Tracking (Post & Parcel Germany) |
+|---|---|---|
+| Für | alle DHL-Sendungen (Paket, Express, international) | DHL Paket Deutschland, Warenpost, Retouren, Importsendungen |
+| Zugang | API-Key einer App auf developer.dhl.com (Self-Service, DHL prüft den Antrag) | API-Key **und** API-Secret einer App. **Die produktive Nutzung schaltet DHL frei.** Je nach Abschnitt der DHL-Dokumentation sind zusätzlich eine **Benutzerkennung und ein Passwort** nötig, die DHL (Kundenberater) vergibt |
+| Abfrage im Plugin | `GET …/track/shipments` mit Header `DHL-API-Key` | „public“-Abfrage `get-status-for-public-user`: `GET …/parcel/de/tracking/v0/shipments?xml=…` mit Basic-Auth (API-Key/API-Secret) |
+| Daten | Status, Text, Verlauf, Termin/Zeitfenster soweit vorhanden | wie die öffentliche Sendungsverfolgung auf dhl.de; mit Empfänger-PLZ zusätzlich Ort und Adresse von Filiale/Packstation; Zustelltag/-zeitfenster nur mit **gesondertem Recht** bei DHL; genauere Einordnung über DHL-Ereigniscodes |
+| Kontingent laut DHL | 250 Abfragen/Tag, 1 Abfrage je 5 s (kostenlos) | 1000 Abfragen/Tag, 3 je Sekunde |
+| Sandbox | – | Die Sandbox ist für Nicht-Geschäftskunden direkt nutzbar, kann laut DHL die public-Abfrage aber **nicht** ausführen – das Plugin nutzt daher nur die Produktion |
+
+**Welche wird genutzt?** Einstellung *DHL-Schnittstelle*:
+- **Automatisch** (Standard): Parcel DE Tracking, sobald ein API-Secret hinterlegt ist, sonst Shipment Tracking – Unified. Lehnt DHL den Parcel-DE-Zugang ab (HTTP 401/403 oder „Anmeldung fehlgeschlagen“), wird Parcel DE für 6 Stunden pausiert und dieselbe Abfrage einmal über Unified gestellt. Temporäre Fehler (Wartung, Netzwerk) oder unbekannte Sendungen lösen keine zweite Abfrage aus.
+- **Parcel DE Tracking** bzw. **Shipment Tracking – Unified**: nur diese Schnittstelle, ohne Ausweichen.
+
+**Als Privatkunde:** Ob DHL einem Privatkunden Parcel DE Tracking in der Produktion nur mit API-Key/API-Secret freischaltet, sagt die Dokumentation nicht eindeutig (siehe oben). Der zuverlässige Weg ist Shipment Tracking – Unified. Parcel DE lohnt sich, wenn DHL Ihre App dafür freigegeben hat. Die Business-Abfrage für Geschäftskunden (GKP-Benutzer mit „Verfolgen Paket & Waren“) liefert nur Sendungen aus dem eigenen Nummernkreis – für empfangene Pakete ist sie ungeeignet und wird nicht verwendet.
+
+### 11.2 Zugang für Shipment Tracking – Unified
 
 1. Auf **developer.dhl.com** ein Benutzerkonto anlegen. Tragen Sie im Profil einen **Firmen- oder Projektnamen** ein (z.B. „Smart Home Mustermann“). DHL prüft jeden Antrag von Hand und lehnt Konten ohne diese Angabe eher ab.
 2. Anmelden → **My Apps** → **Create App** (oder auf der Seite der API „Shipment Tracking – Unified“ auf *Get Access* klicken).
 3. Einen App-Namen vergeben, z.B. „LoxBerry Pakettracker“.
 4. Unter **Select APIs** die API **„Shipment Tracking – Unified“** auswählen und speichern.
 5. Auf die Freigabe durch DHL warten. Der Status der App wechselt auf *Approved*. Das kann einige Zeit dauern.
-6. **My Apps** → App anklicken → bei der API unter den Sternchen auf **Show** klicken → den **Consumer Key** kopieren. Das *Consumer Secret* wird **nicht** benötigt.
+6. **My Apps** → App anklicken → bei der API unter den Sternchen auf **Show** klicken → den **Consumer Key** (API-Key) kopieren.
 
-### 11.2 Im Plugin eintragen
+### 11.3 Zugang für Parcel DE Tracking (optional)
+
+1. Auf developer.dhl.com bei der API **„Parcel DE Tracking (Post & Parcel Germany)“** auf *Get Access* klicken oder in **My Apps** die App um diese API erweitern. In der Liste stehen zwei Einträge – Sandbox und Produktion; für das Plugin wird die **Produktion** gebraucht.
+2. Die Freischaltung der Produktion abwarten bzw. bei DHL anfragen („Die produktive Verwendung wird durch DHL freigeschaltet“).
+3. In **My Apps** **API-Key** und **API-Secret** dieser App kopieren. Key und Secret gelten für alle APIs der App – ist dieselbe App auch für Unified freigegeben, genügt ein API-Key.
+4. Hat DHL Ihnen eine **Benutzerkennung** und ein **Passwort** für die Sendungsverfolgung gegeben, diese ebenfalls eintragen. Sonst die Felder leer lassen.
+
+### 11.4 Im Plugin eintragen
 
 Plugin → **Einstellungen** → Bereich *Anbieter* → **DHL** aufklappen:
 
 | Feld | Bedeutung |
 |---|---|
 | Aktiviert | an |
-| API-Key (Shipment Tracking – Unified) | der Consumer Key |
+| API-Key (DHL Developer App) | der Consumer Key (für beide Schnittstellen) |
+| DHL-Schnittstelle | *Automatisch* (empfohlen), *Parcel DE Tracking* oder *Shipment Tracking – Unified* |
+| API-Secret (nur Parcel DE Tracking) | Secret derselben App; leer = Parcel DE wird nicht genutzt |
+| Tracking-Benutzerkennung / Tracking-Passwort | nur, falls von DHL vergeben; immer beide oder keines |
 | Sprache der Statustexte | `de` |
-| Postleitzahl des Empfängers (optional) | Ihre PLZ (5 Ziffern). Laut DHL liefert die Schnittstelle damit ausführlichere Daten. Die PLZ wird nur an DHL übertragen. |
+| Postleitzahl des Empfängers (optional) | Ihre PLZ (5 Ziffern). Wird nur an DHL übertragen und nur bei Einzelabfragen mitgeschickt. Parcel DE liefert damit z.B. Ort und Adresse von Filiale/Packstation. Passt die PLZ nicht zur Sendung, meldet DHL „Zur angegebenen PLZ sind keine Informationen verfügbar“. |
 | Mindestabstand je Sendung (Minuten) | `60` (siehe Kontingent) |
-| Max. API-Abfragen pro Tag | `250` (kostenloser Zugang) |
+| Max. API-Abfragen pro Tag | `250` (kostenloser Unified-Zugang; gilt für beide Schnittstellen zusammen) |
 
-Dann **„Speichern & Verbindung testen“** klicken. Der Test verbraucht eine Abfrage. Erwartet: *„DHL hat den API-Key akzeptiert“*.
+Alle Zugangsdaten landen in `credentials.json` (Dateirechte 0600), werden nie angezeigt, protokolliert, per MQTT oder REST ausgegeben. Bei Parcel DE schreibt DHL vor, Benutzerkennung und Passwort im XML-Parameter der (verschlüsselten HTTPS-)Adresse zu übertragen; das Plugin protokolliert diese Adresse nicht.
 
-### 11.3 Kontingent
+Dann **„Speichern & Verbindung testen“** klicken. Getestet wird jede konfigurierte Schnittstelle (je 1 Abfrage). Ist eine aktive DHL-Sendung in der Liste, wird mit ihr getestet, sonst mit einer nicht existierenden Testnummer. Beispiele:
+- *„Parcel DE Tracking: ✓ API erreichbar · ✓ Authentifizierung erfolgreich · ✓ Sendungsdaten empfangen (Unterwegs)“*
+- *„Shipment Tracking – Unified: ✓ API erreichbar · ✓ Authentifizierung erfolgreich · Sendung unbekannt“* (Testnummer – erwartet)
+- *„Parcel DE Tracking: ✗ DHL Parcel DE Tracking: Zugang abgelehnt (HTTP 401) …“*
 
-Der kostenlose DHL-Zugang erlaubt **250 Abfragen pro Tag** und höchstens **eine Abfrage alle 5 Sekunden**. Das Plugin hält das automatisch ein:
+Die Seite **Anbieter** zeigt im Abschnitt *Live-Abfrage*, welche Schnittstelle genutzt wird: „Parcel DE Tracking aktiv“ bzw. „Shipment Tracking – Unified aktiv“ erst nach einer erfolgreichen Antwort, vorher „… konfiguriert – noch keine erfolgreiche Abfrage“. Fehlt etwas, steht dort „DHL Live-Tracking nicht vollständig konfiguriert – fehlt: …“. Ist Parcel DE nach einer Ablehnung pausiert, werden Fehler und Pausenende angezeigt.
+
+### 11.5 Kontingent
+
+Das Plugin hält die DHL-Vorgaben automatisch ein (beide Schnittstellen teilen sich Zähler und Drosselung):
 - **Mindestabstand:** Jede Sendung wird höchstens im *Mindestabstand* abgefragt (Standard 60 Minuten). Das gilt auch für **Jetzt aktualisieren**. Neu eingetragene Sendungen werden sofort abgefragt.
 - **Pro Lauf:** höchstens 10 Abfragen, mit 5 Sekunden Abstand. Weitere Sendungen kommen im nächsten Lauf dran.
 - **Tageszähler:** Ein eigener Zähler stoppt bei *Max. API-Abfragen pro Tag* und setzt sich um Mitternacht zurück.
-- **Rate-Limit:** Meldet DHL „zu viele Anfragen“ (HTTP 429), legt das Plugin eine Pause ein (Standard 30 Minuten).
-- **Zugestellte Sendungen** werden nicht mehr abgefragt.
+- **Rate-Limit:** Meldet DHL „zu viele Anfragen“ (HTTP 429), legt das Plugin eine Pause ein (`Retry-After` bzw. 30 Minuten).
+- **Zugestellte Sendungen** werden nicht mehr abgefragt (bei Parcel DE ausdrücklich von DHL vorgeschrieben).
 
-Faustregel: Bei 60 Minuten Mindestabstand reicht das kostenlose Kontingent für etwa 10 gleichzeitig aktive DHL-Sendungen.
+Faustregel: Bei 60 Minuten Mindestabstand reicht das kostenlose Unified-Kontingent für etwa 10 gleichzeitig aktive DHL-Sendungen.
 
-### 11.4 Ohne API-Key
+### 11.6 Fehlermeldungen beim Zugang
+
+| Meldung | Bedeutung / was tun |
+|---|---|
+| „DHL hat die Authentifizierung mit HTTP 401 abgelehnt …“ (Unified) | Das DHL-Gateway hat den Key für Shipment Tracking – Unified nicht akzeptiert. Aus dem Fehler ist nicht erkennbar, ob der Key falsch ist oder die App nicht freigegeben – beides prüfen: Key vollständig kopiert, Produktions-Key, App in *My Apps* für „Shipment Tracking – Unified“ auf *Approved*. |
+| „DHL Parcel DE Tracking: Zugang abgelehnt (HTTP 401/403) …“ | API-Key/API-Secret falsch, nicht dieselbe App, oder die App ist für Parcel DE Tracking (Produktion) noch nicht freigeschaltet. Auch hier ist die Ursache nicht unterscheidbar. |
+| „… Anmeldung fehlgeschlagen (Code 5)“ | Das Gateway hat die App akzeptiert, die DHL-Sendungsverfolgung aber nicht die Anmeldung – Benutzerkennung/Passwort fehlen oder sind falsch. Bei DHL erfragen. |
+| „… fehlender Berechtigung (Code 62/64)“ | Das Recht für diese Abfrage fehlt – bei DHL klären. |
+| „… keine Daten gefunden (Code 100/200)“, „Sendung … nicht gefunden“ | DHL kennt die Sendung (noch) nicht. Bisherige Daten bleiben erhalten. |
+
+### 11.7 Ohne API-Key
 
 Ohne API-Key zeigt die Seite *Anbieter* bei DHL „Nur E-Mail (Zugangsdaten fehlen)“ bzw. – bei ausgeschaltetem E-Mail-Eingang – „Keine Datenquelle“. DHL-Sendungen werden dann nur über Mails aktualisiert.
 
@@ -748,7 +792,7 @@ python3 pakettracker.py run --force -v      # Lauf sofort ausführen, Ausgabe im
 python3 pakettracker.py detect 1Z999AA10123456784   # Anbieter-Erkennung prüfen
 python3 pakettracker.py test imap           # IMAP-Verbindung testen
 python3 pakettracker.py test ups            # UPS-Anmeldung testen
-python3 pakettracker.py test dhl            # DHL-Key testen (verbraucht 1 Abfrage)
+python3 pakettracker.py test dhl            # DHL-Zugang testen (je konfigurierter Schnittstelle 1 Abfrage)
 ```
 
 ### 22.3 Häufige Probleme
@@ -764,7 +808,7 @@ python3 pakettracker.py test dhl            # DHL-Key testen (verbraucht 1 Abfra
 | IMAP-Test: „TLS-Fehler“ | Verschlüsselung passt nicht zum Port, oder das Zertifikat des Servers ist ungültig. |
 | IMAP-Test: „Ordner nicht gefunden“ | Ordnernamen exakt wie im Postfach schreiben; Unterordner z.B. `INBOX/Pakete` oder `INBOX.Pakete`. |
 | Amazon/Hermes/DPD/GLS: „Keine Datenquelle“ | E-Mail-Eingang ist aus oder nicht eingerichtet. |
-| DHL: „DHL lehnt den API-Key ab (HTTP 401/403)“ | Key falsch kopiert, App noch nicht freigegeben, oder „Shipment Tracking – Unified“ ist der App nicht zugeordnet. |
+| DHL: „DHL hat die Authentifizierung mit HTTP 401 abgelehnt“ bzw. „Parcel DE Tracking: Zugang abgelehnt“ | Key/Secret falsch kopiert, App noch nicht freigegeben oder der App die gewählte Schnittstelle nicht zugeordnet – Details in [Abschnitt 11.6](#116-fehlermeldungen-beim-zugang). |
 | DHL: „Tageslimit erreicht“ / „Rate-Limit-Pause“ | Kontingent verbraucht. Das Plugin macht automatisch weiter (am nächsten Tag bzw. nach der Pause). *Mindestabstand je Sendung* erhöhen. |
 | DHL/UPS: „Sendung … (noch) nicht gefunden“ | Die Sendung ist dem Paketdienst noch nicht bekannt (frisch angekündigt) oder die Nummer gehört zu einem anderen Paketdienst. Die bisherigen Daten bleiben erhalten. |
 | UPS: „UPS lehnt die Anmeldung ab“ | Client-ID oder Secret falsch, oder der App fehlt das Produkt „Tracking“. Umgebung `production` gewählt? |
@@ -895,7 +939,7 @@ LoxBerry → **Plugin-Verwaltung** → Pakettracker → **Deinstallieren**. Dabe
 ### Paketdienste
 | Paketdienst | Standard | Eigene Einstellungen |
 |---|---|---|
-| DHL | an | API-Key, Sprache, PLZ, Mindestabstand (60), Tageslimit (250) |
+| DHL | an | API-Key, DHL-Schnittstelle (automatisch), API-Secret, Tracking-Benutzerkennung/-Passwort (optional), Sprache, PLZ, Mindestabstand (60), Tageslimit (250) |
 | UPS | an | Client-ID, Client-Secret, Umgebung, Sprache, Mindestabstand (60), Tageslimit (250) |
 | Amazon | an | Absender-Domains |
 | Hermes, DPD, GLS | an | – |
