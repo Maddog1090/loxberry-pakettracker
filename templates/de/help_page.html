@@ -8,7 +8,7 @@
     <li><b>MQTT prüfen:</b> LoxBerry → MQTT Gateway → <i>Incoming Overview</i>: Einträge <code>{{BASE_TOPIC}}/…</code> müssen erscheinen.</li>
     <li><b>Loxone einrichten</b> (siehe unten), solange der Testmodus läuft.</li>
     <li><b>E-Mail-Eingang</b> einrichten und testen (<i>Einstellungen → E-Mail-Eingang</i>) – nötig für Amazon, Hermes, DPD, GLS.</li>
-    <li>Optional <b>DHL-API-Key</b> und <b>UPS-Zugangsdaten</b> eintragen (<i>Einstellungen → Anbieter</i>).</li>
+    <li>Optional <b>DHL-API-Key</b> und <b>UPS-Zugangsdaten</b> eintragen (<i>Einstellungen → Anbieter</i>). Damit funktionieren manuell eingetragene DHL-/UPS-Nummern auch <b>ohne E-Mail-Eingang</b>.</li>
     <li><b>Testmodus ausschalten</b> (<i>Einstellungen → Allgemein</i>) → <i>Status → Jetzt aktualisieren</i> → Seite <i>Anbieter</i> kontrollieren.</li>
 </ol>
 </div>
@@ -34,6 +34,13 @@
 </div>
 
 <div data-role="collapsible">
+<h3>Termine und abgelaufene Sendungen</h3>
+<p>„heute“/„morgen“ in Statustexten (z.B. „In Zustellung – kommt heute“ aus einer Mail) wird bei jedem Lauf neu berechnet: Am Folgetag steht dort nicht mehr „kommt heute“. Das Feld <code>eta_text</code> liefert den Termin als Text („kommt heute“, „kommt morgen“, „kommt am Fr 09.10.“).</p>
+<p><b>Abgelaufen:</b> Liegt der Termin in der Vergangenheit, kam seitdem keine neue Information und gibt es kein aktuelles Live-Tracking (typisch: Amazon, DPD, GLS ohne Zustellmail), gilt die Sendung nicht mehr als aktiv. Sie verschwindet aus den Slots und Zählern, bleibt aber unter <i>Sendungen → Abgelaufene Sendungen</i> sichtbar, bis sie nach der eingestellten Höchstdauer entfernt wird. Abholbereite Sendungen laufen nicht ab.</p>
+<p><b>Live-Tracking hat Vorrang:</b> Meldet z.B. die DHL-API weiterhin „Unterwegs“, bleibt die Sendung aktiv; <code>eta_text</code> zeigt dann „verspätet – ursprünglicher Termin 01.10.“.</p>
+</div>
+
+<div data-role="collapsible">
 <h3>Sendungen hinzufügen und Anbieter-Erkennung</h3>
 <p><i>Sendungen → Sendung hinzufügen</i>: Nummer eingeben (Leerzeichen egal), Anbieter „Automatisch erkennen“ oder manuell wählen. <b>Eine manuelle Wahl hat immer Vorrang.</b> Sendungen aus E-Mails erscheinen automatisch.</p>
 <table class="pt-table">
@@ -53,7 +60,7 @@
 <h3>Paketdienste einrichten</h3>
 <table class="pt-table">
     <tr><th>Anbieter</th><th>Quelle</th><th>Einrichtung</th></tr>
-    <tr><td>DHL</td><td>API + E-Mail</td><td>developer.dhl.com → <i>My Apps</i> → App mit „Shipment Tracking – Unified“ → nach Freigabe <b>Consumer Key</b> kopieren → <i>Einstellungen → Anbieter → DHL</i> → „Speichern &amp; Verbindung testen“. Kostenlos: 250 Abfragen/Tag, das Plugin drosselt selbst.</td></tr>
+    <tr><td>DHL</td><td>API (E-Mail optional)</td><td>developer.dhl.com → <i>My Apps</i> → App mit „Shipment Tracking – Unified“ → nach Freigabe <b>Consumer Key</b> kopieren → <i>Einstellungen → Anbieter → DHL</i> → „Speichern &amp; Verbindung testen“. Kostenlos: 250 Abfragen/Tag, das Plugin drosselt selbst. Kein E-Mail-Eingang nötig: Sendungsnummer unter <i>Sendungen</i> eintragen.</td></tr>
     <tr><td>UPS</td><td>API + E-Mail</td><td>developer.ups.com → <i>Apps → Add Apps</i> mit Produkt „Tracking“ → <b>Client ID</b> und <b>Client Secret</b> → <i>Einstellungen → Anbieter → UPS</i>, Umgebung „production“ → „Speichern &amp; Verbindung testen“.</td></tr>
     <tr><td>Amazon</td><td>E-Mail</td><td>E-Mail-Eingang einrichten. Erkannt werden Bestellnummer, Artikel, Termin, TBA-Nummer oder die Nummer des ausliefernden Paketdienstes.</td></tr>
     <tr><td>Hermes</td><td>E-Mail</td><td>Benachrichtigungen auf myhermes.de aktivieren, E-Mail-Eingang einrichten.</td></tr>
@@ -86,8 +93,9 @@
     <tr><td><code>{{BASE_TOPIC}}/summary/out_for_delivery</code></td><td>heute in Zustellung</td></tr>
     <tr><td><code>{{BASE_TOPIC}}/summary/pickup_ready</code></td><td>abholbereit</td></tr>
     <tr><td><code>{{BASE_TOPIC}}/summary/delivered_today</code></td><td>heute zugestellt</td></tr>
-    <tr><td><code>{{BASE_TOPIC}}/summary/next_eta</code></td><td>nächster Termin</td></tr>
-    <tr><td><code>{{BASE_TOPIC}}/slot/1/status_code</code> … <code>/status_label</code>, <code>/description</code>, <code>/eta</code>, <code>/eta_window</code>, <code>/used</code></td><td>Slot 1 (wichtigste Sendung), ebenso Slot 2…N</td></tr>
+    <tr><td><code>{{BASE_TOPIC}}/summary/next_eta</code></td><td>nächster Termin (heute oder später)</td></tr>
+    <tr><td><code>{{BASE_TOPIC}}/summary/stale</code></td><td>abgelaufene Sendungen (nicht mehr aktiv)</td></tr>
+    <tr><td><code>{{BASE_TOPIC}}/slot/1/status_code</code> … <code>/status_label</code>, <code>/description</code>, <code>/status_text</code>, <code>/eta</code>, <code>/eta_window</code>, <code>/eta_text</code>, <code>/used</code></td><td>Slot 1 (wichtigste Sendung), ebenso Slot 2…N</td></tr>
     <tr><td><code>{{BASE_TOPIC}}/provider/&lt;id&gt;/active</code>, <code>/shipment_count</code>, <code>/error</code>, <code>/last_success</code></td><td>je Paketdienst (<code>error</code> leer = ok)</td></tr>
 </table>
 </div>

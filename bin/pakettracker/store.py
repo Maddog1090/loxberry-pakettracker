@@ -6,6 +6,7 @@ Regeln:
 - Platzhalter ORDER-<referenz> (Amazon-Mail ohne Sendungsnummer)
                                             → wird durch die echte Sendung mit gleicher Referenz ersetzt
 - Sendung eines deaktivierten Anbieters     → wird dem meldenden Anbieter zugeordnet (z.B. Amazon) oder verworfen
+- Sendung mit aktuellem Live-Tracking       → Mails ergänzen nur Herkunft/Beschreibung, der Live-Status bleibt
 """
 from __future__ import annotations
 
@@ -52,7 +53,7 @@ class ShipmentStore:
             if existing is not None and existing.provider != shipment.provider and "manual" in shipment.origins:
                 self._rekey(existing, shipment.provider)  # manuelle Anbieterwahl gewinnt
         if existing is not None:
-            existing.merge(shipment)
+            existing.merge(shipment, status=not existing.live_fresh())
             return existing
 
         if shipment.reference:
@@ -60,7 +61,7 @@ class ShipmentStore:
             if is_placeholder(shipment):
                 real = next((s for s in related if not is_placeholder(s)), None)
                 if real is not None:
-                    real.merge(shipment)
+                    real.merge(shipment, status=not real.live_fresh())
                     return real
             else:
                 placeholder = next((s for s in related if is_placeholder(s)), None)

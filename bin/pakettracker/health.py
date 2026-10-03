@@ -2,6 +2,7 @@
 
 Gespeichert in data/provider_state.json unter "_health":
   {"dhl": {"last_success": iso, "last_error": text, "last_error_at": iso}, "email": {...}}
+provider_info() meldet die tatsächlich genutzte Datenquelle ("api", "email", "api+email", "none").
 Fehlermeldungen enthalten nie Zugangsdaten oder Mailinhalte.
 """
 from __future__ import annotations
@@ -62,6 +63,7 @@ class Health:
         last_success = max((s for s in successes if s), key=lambda s: parse_ts(s), default="")
         error = self.current_error(provider.id) or (self.current_error(EMAIL) if uses_email else "")
         credentials = provider.credentials_status()
+        live = provider.live_tracking and credentials != "missing"
         if error:
             health = "error"
         elif not uses_email and (not provider.live_tracking or credentials == "missing"):
@@ -72,8 +74,13 @@ class Health:
             health = "ok"
         else:
             health = "idle"
+        # Tatsächlich genutzte Quelle: DHL mit API-Key und ohne E-Mail-Eingang → "api"
+        source = ("api+email" if uses_email else "api") if live else ("email" if uses_email else "none")
         return {
-            "source": provider.current_source(),
+            "source": source,
+            "live": live,
+            "live_last_success": self.last_success(provider.id) if provider.live_tracking else "",
+            "live_error": self.current_error(provider.id) if provider.live_tracking else "",
             "credentials": credentials,
             "last_success": last_success,
             "error": error,

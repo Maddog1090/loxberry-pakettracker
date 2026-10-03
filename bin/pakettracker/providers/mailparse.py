@@ -13,7 +13,7 @@ import re
 from datetime import date
 from typing import Callable, Iterable
 
-from ..models import Shipment, Status, now_iso
+from ..models import Shipment, Status, local_date, local_today, now_iso
 from ..sources.mail import Mail
 from .base import Provider, extract_eta, status_from_keywords
 
@@ -74,10 +74,8 @@ def short_description(subject: str, limit: int = 80) -> str:
 
 
 def mail_reference_date(mail: Mail) -> date:
-    try:
-        return date.fromisoformat(mail.date[:10])
-    except ValueError:
-        return date.today()
+    """Kalendertag (Europe/Berlin), auf den sich „heute/morgen“ in der Mail beziehen."""
+    return local_date(mail.date) or local_today()
 
 
 def parse_carrier_email(provider: Provider, mail: Mail,

@@ -2,7 +2,7 @@
 
 **Paketverfolgung für Loxone:** Pakettracker sammelt Ankündigungen und Sendungsstatus von **DHL, Amazon, Hermes, DPD, GLS und UPS** und stellt sie dem Loxone Miniserver über **MQTT** (und optional REST) bereit – z.B. für „Heute kommt ein Paket“ in der Loxone-App oder eine Erinnerung, ein Paket abzuholen.
 
-**Version 1.0.0** · LoxBerry ≥ 3.0 (getestet mit 4.0) · Autor: ToRe90 · [MIT-Lizenz](LICENSE)
+**Version 1.0.1** · LoxBerry ≥ 3.0 (getestet mit 4.0) · Autor: ToRe90 · [MIT-Lizenz](LICENSE)
 
 📖 **Ausführliche Anleitung (Deutsch): [docs/ANLEITUNG_DE.md](docs/ANLEITUNG_DE.md)** – auf dem LoxBerry unter Plugin → **Hilfe** → **Ausführliche Anleitung öffnen**.
 
@@ -12,7 +12,7 @@
 
 | Anbieter | Datenquelle | Was Sie brauchen |
 |---|---|---|
-| **DHL** | Offizielle API + E-Mail | kostenloser API-Key (developer.dhl.com) und/oder E-Mail-Eingang |
+| **DHL** | Offizielle API, E-Mail optional | kostenloser API-Key (developer.dhl.com) – funktioniert für manuell eingetragene Nummern **ohne E-Mail-Eingang**; zusätzlich/alternativ E-Mail-Eingang |
 | **UPS** | Offizielle API (OAuth) + E-Mail | kostenlose Client-ID + Secret (developer.ups.com) und/oder E-Mail-Eingang |
 | **Amazon** | E-Mail (IMAP) | E-Mail-Eingang |
 | **Hermes** | E-Mail (IMAP) + optionale Live-Abfrage (myhermes.de, inoffiziell) | E-Mail-Eingang und/oder Live-Abfrage einschalten |
@@ -28,6 +28,7 @@ Amazon, Hermes, DPD und GLS bieten Privatkunden keine offizielle Tracking-API. P
 - **E-Mail-Eingang (IMAP):** nur lesend, nur neue Mails von Paketdiensten, mehrere Ordner, Verbindungstest
 - **Loxone-gerecht:** feste Status-Codes 0–7, Zähler, feste Slots (wichtigste Sendung zuerst), Zustand je Paketdienst
 - **Robust:** Fällt ein Paketdienst, das Postfach oder MQTT aus, läuft der Rest weiter; Duplikate werden zusammengeführt
+- **Aktuelle Termine:** „kommt heute/morgen“ wird bei jedem Lauf neu berechnet (Europe/Berlin). Reine E-Mail-Sendungen, deren Termin ohne neue Information verstrichen ist, gelten als *abgelaufen* und verschwinden aus Slots und Zählern. Live-Tracking (DHL, UPS, Hermes) hat Vorrang vor alten Mailprognosen – verspätete Live-Sendungen bleiben aktiv
 - **Testmodus** zum Einrichten ohne Zugangsdaten
 - **Sicher:** Zugangsdaten nur auf dem LoxBerry (0600), nie im Browser oder Log; DHL-Kontingent wird automatisch eingehalten
 - **Weboberfläche** mit Status, Sendungen, Einstellungen, Anbieter-Übersicht und Hilfe; **automatische Updates** über die LoxBerry-Plugin-Verwaltung
@@ -69,7 +70,7 @@ Einstellungen, Zugangsdaten und Sendungen bleiben bei jedem Update erhalten.
 2. Im **MQTT Gateway** prüfen, ob Werte unter `pakettracker/…` ankommen.
 3. Loxone einrichten (siehe unten), solange der Testmodus läuft.
 4. **Einstellungen → E-Mail-Eingang** einrichten und testen.
-5. Optional DHL-API-Key und UPS-Zugangsdaten eintragen.
+5. Optional DHL-API-Key und UPS-Zugangsdaten eintragen. DHL-Sendungsnummern unter **Sendungen** eintragen – dafür ist kein E-Mail-Eingang nötig.
 6. **Testmodus ausschalten** und auf der Seite **Anbieter** kontrollieren.
 
 Schritt für Schritt: [Anleitung, Abschnitt 4](docs/ANLEITUNG_DE.md#4-erste-inbetriebnahme).
@@ -80,8 +81,8 @@ Basis-Topic `pakettracker` (einstellbar), retained für Werte mit Inhalt:
 
 | Topic | Inhalt |
 |---|---|
-| `pakettracker/summary/active`, `out_for_delivery`, `pickup_ready`, `delivered_today`, `next_eta` … | Zähler und nächster Termin |
-| `pakettracker/slot/<n>/status_code`, `status_label`, `description`, `eta`, `used` … | feste Slots 1…N, wichtigste Sendung zuerst |
+| `pakettracker/summary/active`, `out_for_delivery`, `pickup_ready`, `delivered_today`, `next_eta`, `stale` … | Zähler, nächster Termin (heute oder später), abgelaufene Sendungen |
+| `pakettracker/slot/<n>/status_code`, `status_label`, `status_text`, `description`, `eta`, `eta_text`, `used` … | feste Slots 1…N, wichtigste Sendung zuerst; ein frei gewordener Slot wird mit leeren Werten überschrieben |
 | `pakettracker/provider/<id>/active`, `shipment_count`, `error`, `last_success` | je Paketdienst (`error` leer = ok) |
 
 Status-Codes: 0 unbekannt · 1 angekündigt · 2 unterwegs · 3 in Zustellung · 4 zugestellt · 5 abholbereit · 6 Problem · 7 Rücksendung.

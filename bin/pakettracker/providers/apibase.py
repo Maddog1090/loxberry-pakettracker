@@ -17,10 +17,10 @@ import socket
 import time
 import urllib.error
 import urllib.request
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from typing import ClassVar
 
-from ..models import Shipment, now_iso, parse_ts
+from ..models import Shipment, local_today, now_iso, parse_ts
 from ..schema import Field
 from .base import Provider, ProviderError
 
@@ -62,7 +62,7 @@ class ApiProvider(Provider):
             del checked[number]
 
     def _usage(self) -> dict:
-        today = date.today().isoformat()
+        today = local_today().isoformat()
         usage = self.state.get("usage")
         if not isinstance(usage, dict) or usage.get("day") != today:
             usage = self.state["usage"] = {"day": today, "count": 0}
@@ -167,7 +167,7 @@ class ApiProvider(Provider):
 
     def fetch(self, tracking_number: str) -> Shipment:
         if self.credentials_status() == "missing":
-            raise ProviderError(f"{self._missing_credentials()} – Sendungen werden nur per E-Mail aktualisiert",
+            raise ProviderError(f"{self._missing_credentials()} – keine Live-Abfrage (nur E-Mail, falls eingerichtet)",
                                 abort=True, level=logging.INFO)
         try:
             return self._fetch(tracking_number)

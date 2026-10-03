@@ -6,7 +6,8 @@ Live-Tracking: DHL "Shipment Tracking – Unified" API (developer.dhl.com, koste
   Termin: estimatedTimeOfDelivery bzw. estimatedDeliveryTimeFrame (estimatedFrom/estimatedThrough)
   Kostenloser Zugang: 250 Abfragen/Tag, höchstens 1 Abfrage alle 5 Sekunden (sonst HTTP 429).
   Fehler kommen als application/problem+json (RFC 7807: title, detail, status).
-Ankündigungen: Benachrichtigungsmails von DHL / Deutsche Post.
+  Funktioniert ohne E-Mail-Eingang: manuell eingetragene Nummern werden direkt abgefragt.
+Ankündigungen (optional): Benachrichtigungsmails von DHL / Deutsche Post.
 """
 from __future__ import annotations
 
@@ -70,6 +71,18 @@ class DhlProvider(ApiProvider):
         "failure": Status.EXCEPTION,
         "unknown": Status.UNKNOWN,
     }
+
+    # Feinere Einordnung über den Statustext: Die API meldet Zustellung, Zustellversuch, Abholbereitschaft
+    # und Rücksendung meist nur als "transit" bzw. "failure". Spezifische Formulierungen zuerst.
+    _TEXT_RULES = (
+        (Status.RETURNED, ("rücksendung", "zurück an den absender", "an den absender zurück", "returned to sender",
+                           "return to sender", "being returned")),
+        (Status.EXCEPTION, ("konnte nicht zugestellt", "nicht angetroffen", "zustellversuch", "nicht zustellbar",
+                            "could not be delivered", "delivery attempt", "unsuccessful delivery")),
+        (Status.OUT_FOR_DELIVERY, ("zustellfahrzeug", "in zustellung", "out for delivery")),
+        (Status.PICKUP_READY, ("abholbereit", "zur abholung", "ready for pick", "packstation eingeliefert",
+                               "in der packstation", "available for pick")),
+    )
 
     @classmethod
     def check_digit_ok(cls, number: str) -> bool | None:
@@ -167,12 +180,11 @@ class DhlProvider(ApiProvider):
         st = data.get("status") if isinstance(data.get("status"), dict) else {}
         status = cls._API_STATUS.get(st.get("statusCode", ""), Status.UNKNOWN)
         text = str(st.get("description") or st.get("status") or "")
-        # Die API kennt kein eigenes "in Zustellung" – aus dem Text ableiten
+        # Die API kennt kein eigenes "in Zustellung"/"abholbereit" – aus dem Text ableiten
         if status == Status.IN_TRANSIT:
-            status = status_from_keywords(text, (
-                (Status.OUT_FOR_DELIVERY, ("zustellfahrzeug", "in zustellung", "out for delivery")),
-                (Status.PICKUP_READY, ("abholbereit", "zur abholung", "ready for pick")),
-            )) or status
+            status = status_from_keywords(text, cls._TEXT_RULES) or status
+        elif status == Status.EXCEPTION:
+            status = status_from_keywords(text, cls._TEXT_RULES[:1]) or status  # Rücksendung statt "Problem"
         events = [
             TrackingEvent(
                 timestamp=e.get("timestamp", ""),

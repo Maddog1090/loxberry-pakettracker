@@ -5,7 +5,8 @@
 3. manuell erfasste Sendungen übernehmen, entfernte verwerfen
 4. nicht abgeschlossene Sendungen live beim Anbieter abfragen (DHL, UPS)
 5. Aufräumen (zugestellt / veraltet)
-6. Ausgabe: state.json, MQTT
+6. Ausgabe: state.json, MQTT – Sendungen mit verstrichenem Termin ohne neue Information gelten
+   dort als "stale" und erscheinen nicht mehr als aktiv (siehe Shipment.is_stale)
 Fehler einzelner Anbieter oder des E-Mail-Abrufs werden protokolliert und im
 Gesundheitszustand vermerkt – der Lauf geht immer weiter.
 """
@@ -20,7 +21,7 @@ from . import registry
 from .config import Config
 from .health import EMAIL, Health
 from .loxberry import Paths
-from .models import Shipment, Status, now_iso, parse_ts
+from .models import Shipment, Status, local_date, local_today, now_iso, parse_ts
 from .outputs import mqtt, snapshot, statefile
 from .providers.base import Provider, ProviderError
 from .sources import mail, manual
@@ -101,7 +102,7 @@ def _read_mails(cfg: Config, states: dict, providers: dict[str, Provider], healt
 
 
 def _collect(cfg: Config, paths: Paths, today: date | None = None) -> CollectResult:
-    today = today or date.today()
+    today = today or local_today()
     mock = cfg.get("general", "mock_mode")
     states = read_json(paths.provider_state_file, {})
     if not isinstance(states, dict):
@@ -156,7 +157,11 @@ def _collect(cfg: Config, paths: Paths, today: date | None = None) -> CollectRes
         if not provider.mock and not provider.due(shipment.tracking_number):
             continue
         try:
-            shipment.merge(provider.track(shipment.tracking_number))
+            result = provider.track(shipment.tracking_number)
+            if result.last_update and not provider.mock:  # die API kennt die Sendung und liefert einen Status
+                result.live_checked = now_iso()
+            # Live-Status hat Vorrang – auch vor einer später eingegangenen (älteren) Mailprognose
+            shipment.merge(result, authoritative=not provider.mock)
             if not provider.mock:
                 health.success(provider.id)
         except NotImplementedError as exc:
@@ -187,8 +192,8 @@ def _collect(cfg: Config, paths: Paths, today: date | None = None) -> CollectRes
     now = datetime.now(timezone.utc)
     result = []
     for shipment in store.values():
-        delivered = parse_ts(shipment.delivered_at)
-        if shipment.status == Status.DELIVERED and delivered and delivered.astimezone().date() < today - keep_delivered:
+        delivered = local_date(shipment.delivered_at)
+        if shipment.status == Status.DELIVERED and delivered and delivered < today - keep_delivered:
             continue
         seen = parse_ts(shipment.last_update) or parse_ts(shipment.first_seen)
         if "manual" not in shipment.origins and seen and now - seen > max_age:
@@ -208,7 +213,7 @@ def collect(cfg: Config, paths: Paths, today: date | None = None) -> list[Shipme
     return _collect(cfg, paths, today).shipments
 
 
-def run(paths: Paths, cfg: Config, force: bool = False) -> int:
+def run(paths: Paths, cfg: Config, force: bool = False, today: date | None = None) -> int:
     with exclusive_lock(paths.lock_file) as acquired:
         if not acquired:
             log.info("Ein anderer Lauf ist noch aktiv – übersprungen")
@@ -220,11 +225,11 @@ def run(paths: Paths, cfg: Config, force: bool = False) -> int:
         mock = cfg.get("general", "mock_mode")
         log.info("Abfrage gestartet%s", " (Testmodus)" if mock else "")
         previous = read_json(paths.state_file, {})
-        result = _collect(cfg, paths)
+        result = _collect(cfg, paths, today)
         provider_ids = [cls.id for cls in registry.provider_classes()
                         if cfg.get(f"providers.{cls.id}", "enabled")]
         mqtt_settings = cfg.section("mqtt")
-        snap = snapshot.build(result.shipments, provider_ids, mqtt_settings["slots"], mock,
+        snap = snapshot.build(result.shipments, provider_ids, mqtt_settings["slots"], mock, today=today,
                               provider_info=result.provider_info)
         snap["email"] = result.email_info
         snap["errors"] = result.errors

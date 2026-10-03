@@ -98,6 +98,8 @@ Am 02.10.2026 mit der offiziellen Doku auf developer.dhl.com abgeglichen:
 | 429 | ja + Pause (`Retry-After` oder 30 min) | nein | WARNING |
 | 5xx, Timeout (15 s), Netzwerk | ja | nein | WARNING |
 
+**Ohne E-Mail (seit 1.0.1 dokumentiert und getestet):** Die Live-Abfrage hängt nicht am E-Mail-Eingang. Eine manuell eingetragene Nummer (`tracked.json`) wird mit API-Key direkt abgefragt; `health.provider_info` meldet dann `source = "api"`, `live = true`. Am 03.10.2026 erneut mit developer.dhl.com abgeglichen (Endpoint, Header, Free-Tier-Limit unverändert); es wird weiterhin ausschließlich die Unified API genutzt, bestehende API-Keys gelten unverändert. Zusätzlich ordnet `map_api_shipment` Texte zu Zustellversuch (→ 6), Packstation/Filiale zur Abholung (→ 5) und Rücksendung (→ 7) ein.
+
 Der Zustand (Tageszähler, letzte Abfrage je Sendung, Pause) liegt in `data/provider_state.json` und übersteht Upgrades über das bestehende Backup. Der Testmodus nutzt diesen Pfad nicht. Beim Wechsel aus dem Testmodus verwirft die Engine die simulierten Statusdaten einmalig.
 
 ## UPS-Live-Tracking (seit 0.2.0)
@@ -138,6 +140,7 @@ Die Registry sortiert die Treffer nach Sicherheit und bei Gleichstand nach `dete
 - Amazon-Mail ohne Sendungsnummer → Platzhalter `ORDER-<Bestellnummer>`. Er wird durch die erste echte Sendung mit gleicher `reference` ersetzt (oder geht in sie auf).
 - Meldet eine Mail eine Sendung für einen deaktivierten Anbieter (z.B. Amazon nennt eine DHL-Nummer, DHL ist aus), wird sie dem meldenden Anbieter zugeordnet.
 - Dieselbe Mail aus mehreren Ordnern bzw. Läufen: IMAP-UID-Merker je Ordner plus Message-ID-Abgleich im Lauf.
+- Sendung mit aktuellem Live-Tracking (`live_checked` ≤ 48 h, `Shipment.live_fresh`) → eine Mail ergänzt nur Herkunft, Beschreibung und Referenz (`merge(status=False)`); Status, Text und Termin bleiben aus der API.
 
 ## IMAP (`sources/imap.py`)
 
@@ -155,7 +158,9 @@ Die Registry sortiert die Treffer nach Sicherheit und bei Gleichstand nach `dete
 
 `data/provider_state.json["_health"]` speichert je Anbieter und für `email` den letzten Erfolg und den letzten Fehler. Daraus entsteht in `state.json` je Anbieter:
 - `health`: `ok`, `error`, `email_only` (API-Zugang fehlt), `no_source` (weder API noch E-Mail) oder `idle`
-- `source`, `credentials`, `last_success`, `error`, `active`, `shipment_count`
+- `source` – tatsächlich genutzte Quelle: `api`, `email`, `api+email` oder `none` (seit 1.0.1; vorher die statische Fähigkeit)
+- `live`, `live_last_success`, `live_error` – Live-Abfrage möglich (API-Anbieter mit Zugangsdaten bzw. eingeschaltete Hermes-Abfrage), letzter Erfolg und aktueller Fehler nur der API
+- `credentials`, `last_success`, `error`, `active`, `shipment_count`
 
 Zusätzlich gibt es `email`, `errors` (Anzahl Fehler im Lauf) und `last_full_success`. Fehlende Zugangsdaten oder ein erreichtes Kontingent gelten nicht als Fehler.
 
@@ -168,7 +173,17 @@ Zusätzlich gibt es `email`, `errors` (Anzahl Fehler im Lauf) und `last_full_suc
 5. Aufräumen: zugestellte nach `keep_delivered_days`, veraltete nach `max_age_days`
 6. `state.json` schreiben, MQTT publizieren
 
-Beim Zusammenführen gilt: Neuere Informationen (`last_update`) gewinnen. Eine ältere Mail überschreibt also keinen neueren API-Status.
+Beim Zusammenführen gilt: Neuere Informationen (`last_update`) gewinnen. Eine ältere Mail überschreibt also keinen neueren API-Status. Ergebnisse einer Live-Abfrage sind zusätzlich **maßgeblich** (`merge(authoritative=True)`): Sie gelten auch dann, wenn ihr Ereigniszeitpunkt älter ist als eine zwischenzeitlich eingegangene Mailprognose. Jede erfolgreiche Abfrage mit Status setzt `live_checked`.
+
+## Termine, relative Texte und abgelaufene Sendungen (seit 1.0.1)
+
+Alle Tagesvergleiche laufen über `models.local_today()/local_date()` in **Europe/Berlin** (`zoneinfo`, Rückfall auf die Systemzeitzone), nie über UTC-Daten. `snapshot.build(today, now)` berechnet bei **jedem Lauf** neu:
+
+- **Relative Wörter** (`heute`, `morgen`, `übermorgen`, `today`, `tomorrow`) im gespeicherten Originaltext werden auf den Kalendertag der Statusinformation (`last_update`) bezogen und relativ zu heute neu formuliert (`render_relative`). Liegt der gemeinte Tag in der Vergangenheit oder ist der Bezugstag unbekannt, entfällt die Angabe samt „kommt“. `state.json` enthält je Sendung den aufbereiteten `status_text` und das Original `status_text_raw`; geladen wird das Original (Dateien aus 1.0.0 ohne `status_text_raw` liefern ebenfalls das Original).
+- **`eta_text`** aus `eta`: `kommt heute`, `kommt morgen`, `kommt am <Wochentag> TT.MM.`, verstrichen und aktiv: `verspätet – ursprünglicher Termin TT.MM.`, verstrichen und stale: `Termin TT.MM. überschritten`.
+- **Stale** (`Shipment.is_stale`): nicht abgeschlossen, nicht abholbereit, gültige `eta` < heute, kein `live_checked` innerhalb von 48 h und `last_update` nicht nach dem ETA-Tag. Stale-Sendungen zählen nicht zu `active`, den Status-Zählern, `arriving_today`, `next_eta` (nur Termine ≥ heute) und `provider/<id>/active` und belegen keinen Slot. Sie bleiben in `shipments` (`stale: true`) und werden wie bisher nach `max_age_days` entfernt. `summary/stale` zählt sie.
+
+Die Slot-Liste hat immer genau `slots` Einträge. Rückt eine Sendung auf oder fällt sie heraus, werden alle Felder des Slots neu gesendet; leere Texte löschen den retained Wert (siehe unten), `used` = 0 und `status_code` = 0 bleiben gespeichert.
 
 ## Normalisierter Status (Loxone-Werte)
 
@@ -192,9 +207,9 @@ Loxone kann keine dynamischen Listen verarbeiten. Deshalb gibt es neben Zählern
 **MQTT** (retained, Basis-Topic `pakettracker`). Leere Werte werden ebenfalls mit retain gesendet und löschen damit nach MQTT-Standard den gespeicherten Wert (bewusst so belassen: keine veralteten Fehlertexte im Broker, Loxone erhält leere Werte live):
 
 ```
-pakettracker/summary/{active,announced,in_transit,out_for_delivery,pickup_ready,exception,delivered_today,arriving_today,next_eta}
+pakettracker/summary/{active,announced,in_transit,out_for_delivery,pickup_ready,exception,delivered_today,arriving_today,next_eta,stale}
 pakettracker/provider/<id>/active
-pakettracker/slot/<n>/{used,status_code,status,status_label,status_text,provider,tracking_number,description,eta}
+pakettracker/slot/<n>/{used,status_code,status,status_label,status_text,provider,tracking_number,description,eta,eta_window,eta_text}
 pakettracker/updated, pakettracker/updated_epoch, pakettracker/mock_mode, pakettracker/json
 ```
 

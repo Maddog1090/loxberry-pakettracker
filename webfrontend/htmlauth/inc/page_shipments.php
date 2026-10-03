@@ -72,15 +72,15 @@ function pt_tracking_link(array $providers, string $provider, string $number): s
     </table>
 <?php endif; ?>
 
-<h3><?= pt_h($L['SHIPMENTS.CURRENT']) ?></h3>
-<?php if (empty($state['shipments'])): ?>
-    <p><?= pt_h($L['SHIPMENTS.NONE']) ?></p>
-<?php else: ?>
+<?php
+/** Tabelle des aktuellen Stands; $rows aus state.json. */
+function pt_shipment_table(array $rows, array $providers, array $L): void
+{ ?>
     <table class="pt-table">
         <tr><th><?= pt_h($L['SHIPMENTS.PROVIDER']) ?></th><th><?= pt_h($L['SHIPMENTS.NUMBER']) ?></th>
             <th><?= pt_h($L['SHIPMENTS.DESCRIPTION']) ?></th><th><?= pt_h($L['SHIPMENTS.STATUS']) ?></th>
             <th><?= pt_h($L['SHIPMENTS.ETA']) ?></th><th><?= pt_h($L['SHIPMENTS.ORIGIN']) ?></th></tr>
-        <?php foreach ($state['shipments'] as $s): ?>
+        <?php foreach ($rows as $s): ?>
             <tr>
                 <td><?= pt_h($providers[$s['provider']]['title'] ?? $s['provider']) ?></td>
                 <td><?= pt_tracking_link($providers, $s['provider'], $s['tracking_number']) ?></td>
@@ -100,9 +100,27 @@ function pt_tracking_link(array $providers, string $provider, string $number): s
                         </details>
                     <?php endif; ?>
                 </td>
-                <td><?= pt_h(pt_fmt_eta($s)) ?></td>
-                <td><?= pt_h(implode(', ', $s['origins'])) ?></td>
+                <td><?= pt_h(pt_fmt_eta($s)) ?>
+                    <?php if (($s['eta_text'] ?? '') !== ''): ?><div class="pt-small"><?= pt_h($s['eta_text']) ?></div><?php endif; ?>
+                </td>
+                <td><?= pt_h(implode(', ', $s['origins'])) ?><?= !empty($s['live_checked']) ? pt_h(' · ' . $L['SHIPMENTS.LIVE']) : '' ?></td>
             </tr>
         <?php endforeach; ?>
     </table>
+<?php }
+
+$current = array_values(array_filter($state['shipments'] ?? [], function ($s) { return empty($s['stale']); }));
+$stale = array_values(array_filter($state['shipments'] ?? [], function ($s) { return !empty($s['stale']); }));
+?>
+<h3><?= pt_h($L['SHIPMENTS.CURRENT']) ?></h3>
+<?php if (!$current): ?>
+    <p><?= pt_h($L['SHIPMENTS.NONE']) ?></p>
+<?php else: ?>
+    <?php pt_shipment_table($current, $providers, $L); ?>
+<?php endif; ?>
+
+<?php if ($stale): ?>
+    <h3><?= pt_h($L['SHIPMENTS.STALE_HEADING']) ?></h3>
+    <p class="pt-hint"><?= pt_h($L['SHIPMENTS.STALE_HINT']) ?></p>
+    <?php pt_shipment_table($stale, $providers, $L); ?>
 <?php endif; ?>

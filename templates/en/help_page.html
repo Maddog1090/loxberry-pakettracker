@@ -8,7 +8,7 @@
     <li><b>Check MQTT:</b> LoxBerry → MQTT Gateway → <i>Incoming Overview</i>: entries <code>{{BASE_TOPIC}}/…</code> must appear.</li>
     <li><b>Set up Loxone</b> (see below) while test mode is active.</li>
     <li>Set up and test the <b>e-mail input</b> (<i>Settings → E-mail input</i>) – required for Amazon, Hermes, DPD, GLS.</li>
-    <li>Optionally enter the <b>DHL API key</b> and <b>UPS credentials</b> (<i>Settings → Carriers</i>).</li>
+    <li>Optionally enter the <b>DHL API key</b> and <b>UPS credentials</b> (<i>Settings → Carriers</i>). Manually entered DHL/UPS numbers then work <b>without the e-mail input</b>.</li>
     <li><b>Switch off test mode</b> (<i>Settings → General</i>) → <i>Status → Update now</i> → check the <i>Carriers</i> page.</li>
 </ol>
 </div>
@@ -28,9 +28,16 @@
 </div>
 
 <div data-role="collapsible">
+<h3>Dates and expired shipments</h3>
+<p>Relative words in status texts (e.g. "kommt heute" from an e-mail) are recalculated on every run, so an old text never keeps saying "today". The field <code>eta_text</code> gives the date as text ("kommt heute", "kommt morgen", "kommt am Fr 09.10." – German like the status labels).</p>
+<p><b>Expired:</b> if the expected date has passed, no newer information arrived and there is no current live tracking (typically Amazon, DPD, GLS without a delivery e-mail), the shipment is no longer active. It disappears from slots and counters but stays visible under <i>Shipments → Expired shipments</i> until the configured maximum age. Shipments ready for pickup do not expire.</p>
+<p><b>Live tracking wins:</b> if e.g. the DHL API still reports "in transit", the shipment stays active and <code>eta_text</code> shows "verspätet – ursprünglicher Termin 01.10." (delayed, original date).</p>
+</div>
+
+<div data-role="collapsible">
 <h3>Carriers</h3>
 <ul>
-    <li><b>DHL</b> (API + e-mail): developer.dhl.com → My Apps → app with "Shipment Tracking – Unified" → Consumer Key → <i>Settings → Carriers → DHL</i>.</li>
+    <li><b>DHL</b> (API, e-mail optional): developer.dhl.com → My Apps → app with "Shipment Tracking – Unified" → Consumer Key → <i>Settings → Carriers → DHL</i>. No e-mail input needed: add the tracking number under <i>Shipments</i>.</li>
     <li><b>UPS</b> (API + e-mail): developer.ups.com → Apps with product "Tracking" → Client ID and Secret → <i>Settings → Carriers → UPS</i>.</li>
     <li><b>Amazon, Hermes, DPD, GLS</b> (e-mail only): enable e-mail notifications at the carrier and set up the e-mail input.</li>
     <li>A manually selected carrier always wins over automatic detection. 12- and 14-digit numbers are ambiguous.</li>
@@ -40,7 +47,7 @@
 <div data-role="collapsible">
 <h3>MQTT, Loxone, REST</h3>
 <ul>
-    <li>Topics: <code>{{BASE_TOPIC}}/summary/…</code>, <code>{{BASE_TOPIC}}/slot/&lt;n&gt;/…</code>, <code>{{BASE_TOPIC}}/provider/&lt;id&gt;/active|shipment_count|error|last_success</code>. MQTT Gateway V2: add subscription <code>{{BASE_TOPIC}}/#</code>. Empty values (e.g. <code>error</code> without error) are not retained by the broker (MQTT standard), but are delivered live.</li>
+    <li>Topics: <code>{{BASE_TOPIC}}/summary/…</code> (incl. <code>stale</code> = expired shipments), <code>{{BASE_TOPIC}}/slot/&lt;n&gt;/…</code> (incl. <code>status_text</code>, <code>eta_text</code>), <code>{{BASE_TOPIC}}/provider/&lt;id&gt;/active|shipment_count|error|last_success</code>. MQTT Gateway V2: add subscription <code>{{BASE_TOPIC}}/#</code>. Empty values (e.g. <code>error</code> without error) are not retained by the broker (MQTT standard), but are delivered live.</li>
     <li>Loxone: virtual inputs named like in the gateway (<code>/</code> → <code>_</code>), e.g. <code>{{BASE_TOPIC}}_slot_1_status_code</code>; texts as virtual text inputs.</li>
     <li>REST: <code>{{API_URL}}?q=summary&amp;format=text&amp;token=…</code> – token under <i>Settings → REST</i>.</li>
 </ul>

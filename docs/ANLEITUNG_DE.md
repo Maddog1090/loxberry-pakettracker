@@ -1,6 +1,6 @@
 # Pakettracker für LoxBerry – Benutzeranleitung
 
-Version 1.0.0 · Autor: ToRe90 · Kontakt: existenzz-cod2@gmx.de
+Version 1.0.1 · Autor: ToRe90 · Kontakt: existenzz-cod2@gmx.de
 
 Diese Anleitung richtet sich an Anwender, die das Plugin einrichten und nutzen möchten. Programmierkenntnisse sind nicht nötig. Für einige Schritte (Logs per SSH, Backup) sind Grundkenntnisse im Umgang mit dem LoxBerry hilfreich.
 
@@ -46,7 +46,7 @@ Unterstützte Paketdienste:
 
 | Paketdienst | Woher kommen die Daten? | Was Sie brauchen |
 |---|---|---|
-| **DHL** | Offizielle DHL-Schnittstelle (API) und DHL-Benachrichtigungsmails | Einen kostenlosen DHL-API-Key und/oder den E-Mail-Eingang |
+| **DHL** | Offizielle DHL-Schnittstelle (API), optional zusätzlich DHL-Benachrichtigungsmails | Einen kostenlosen DHL-API-Key (dann kein E-Mail-Eingang nötig) und/oder den E-Mail-Eingang |
 | **UPS** | Offizielle UPS-Schnittstelle (API) und UPS-Benachrichtigungsmails | Kostenlose UPS-Zugangsdaten (Client-ID und Secret) und/oder den E-Mail-Eingang |
 | **Amazon** | Versand- und Zustellmails von Amazon | E-Mail-Eingang |
 | **Hermes** | Benachrichtigungsmails von Hermes, optional Live-Abfrage über die Sendungsverfolgung von myhermes.de | E-Mail-Eingang und/oder *Live-Abfrage* einschalten |
@@ -134,8 +134,10 @@ Oben in der Plugin-Oberfläche finden Sie fünf Seiten:
 | **Fehler** | Beim letzten Versuch ist ein Fehler aufgetreten. Der Text steht in der Spalte *Letzter Fehler*. |
 | **Noch keine Daten** | Es gab noch keinen erfolgreichen Abruf, z.B. weil noch keine Sendung vorhanden ist. |
 | **Nur E-Mail (Zugangsdaten fehlen)** | DHL bzw. UPS: Ohne API-Zugangsdaten werden nur Mails ausgewertet. Das ist kein Fehler. |
-| **Keine Datenquelle** | Der Paketdienst kann keine Daten liefern, meist weil der E-Mail-Eingang ausgeschaltet ist. |
+| **Keine Datenquelle** | Der Paketdienst kann keine Daten liefern, meist weil der E-Mail-Eingang ausgeschaltet ist und keine Zugangsdaten hinterlegt sind. |
 | **Deaktiviert** | Der Paketdienst ist in den Einstellungen ausgeschaltet. |
+
+Die Spalte **Datenquelle** zeigt die tatsächlich genutzte Quelle: *API* (z.B. DHL mit API-Key bei ausgeschaltetem E-Mail-Eingang), *E-Mail*, *API + E-Mail* oder *keine*. Darunter zeigt der Abschnitt **Live-Abfrage** je Paketdienst mit Schnittstelle, ob die Live-Abfrage aktiv ist, wann sie zuletzt erfolgreich war, einen eventuellen Fehler und – ohne Zugangsdaten – einen Hinweis, wo sie einzutragen sind. Gespeicherte Zugangsdaten werden nie angezeigt.
 
 ---
 
@@ -171,6 +173,9 @@ Hinweise:
 - **Reihenfolge der Slots:** In Zustellung (3) → Abholbereit (5) → Problem (6) → Unterwegs (2) → Angekündigt (1) → Unbekannt (0) → heute zugestellt (4). Bei gleichem Status steht die Sendung mit dem früheren Zustelltermin vorne.
 - **Abgeschlossene Sendungen:** Zugestellte Sendungen erscheinen nur am Tag der Zustellung in den Slots. Sendungen mit Status 7 erscheinen nicht in den Slots, nur in der Sendungsliste und per REST.
 - **Wann eine Sendung verschwindet:** Zugestellte Sendungen werden nach *Zugestellte Sendungen behalten* (Standard: 1 Tag) aus der Liste entfernt. Sendungen ohne Neuigkeiten verschwinden nach *Sendungen ohne Aktualisierung entfernen nach* (Standard: 30 Tage). Von Hand eingetragene Sendungen bleiben in diesem Fall stehen.
+- **Abgelaufene Sendungen (seit 1.0.1):** Ist der Zustelltermin verstrichen, kam seitdem keine neue Statusinformation und gibt es kein aktuelles Live-Tracking, gilt die Sendung als *abgelaufen* („stale“). Das betrifft vor allem reine E-Mail-Sendungen (Amazon, DPD, GLS, Hermes ohne Live-Abfrage), für die nie eine Zustellmail kam. Abgelaufene Sendungen erscheinen **nicht mehr** in den Slots, in `summary/active`, den Status-Zählern, `arriving_today`, `next_eta` und `provider/<id>/active`. Sie bleiben gespeichert, stehen unter *Sendungen → Abgelaufene Sendungen* und werden wie oben nach der Höchstdauer entfernt. Kommt eine neue Mail oder ein Live-Status, ist die Sendung wieder aktiv. Abholbereite Sendungen (Code 5) laufen nicht ab. Ihre Anzahl steht in `summary/stale`.
+- **Live-Tracking hat Vorrang:** Liefert eine Live-Abfrage (DHL, UPS, Hermes mit Live-Abfrage) einen Status, gilt dieser vor jeder Mailprognose. Hat die Live-Abfrage in den letzten 48 Stunden erfolgreich geantwortet, läuft die Sendung nicht ab, auch wenn der ursprüngliche Termin vorbei ist – `eta_text` zeigt dann z.B. „verspätet – ursprünglicher Termin 01.10.“.
+- **„heute“ und „morgen“ in Texten:** Statustexte aus Mails wie „In Zustellung – kommt heute“ werden bei jedem Lauf neu berechnet (Bezug: Tag der Mail, Kalendertage in Europe/Berlin). Am Folgetag steht dort nicht mehr „kommt heute“; aus „kommt morgen“ wird am nächsten Tag „kommt heute“.
 - **Feste Codes:** Die Codes 0–7 ändern sich in künftigen Versionen nicht. Sie können sich in Loxone darauf verlassen.
 
 ---
@@ -294,8 +299,12 @@ Für Tests können Sie statt IMAP einen Ordner mit gespeicherten Mails (`.eml`-D
 ## 11. DHL einrichten
 
 DHL-Sendungen kommen auf zwei Wegen ins Plugin:
-- **E-Mail:** DHL-Benachrichtigungen („Ihr Paket kommt am …“) werden automatisch erkannt, wenn der E-Mail-Eingang eingerichtet ist.
 - **DHL-Schnittstelle:** Mit einem API-Key fragt das Plugin den aktuellen Status jeder DHL-Sendung direkt bei DHL ab. Das ist genauer und aktueller als die Mails.
+- **E-Mail (optional):** DHL-Benachrichtigungen („Ihr Paket kommt am …“) werden automatisch erkannt, wenn der E-Mail-Eingang eingerichtet ist.
+
+**DHL ganz ohne E-Mail:** API-Key hinterlegen (11.1/11.2) und die Sendungsnummer unter *Sendungen → Sendung hinzufügen* eintragen (Anbieter „Automatisch erkennen“ oder „DHL“). Das Plugin fragt die Sendung dann regelmäßig direkt bei DHL ab; ein E-Mail-Konto ist nicht nötig. Die Seite *Anbieter* zeigt als Datenquelle „API“ und im Abschnitt *Live-Abfrage* „DHL Live-Tracking: aktiv“ mit der letzten erfolgreichen Abfrage.
+
+Übernommen werden, soweit DHL sie liefert: Status, Statustext, Sendungsverlauf (Zeit, Text, Ort), voraussichtlicher Zustelltag und -zeitfenster. Zustellversuche, Abholbereitschaft (Filiale/Packstation) und Rücksendungen erkennt das Plugin am Statustext. Fehlende Angaben werden nicht ergänzt oder geschätzt. Zugestellte Sendungen werden nicht weiter abgefragt. Schlägt eine Abfrage fehl (falscher Key, Netzwerk, Rate-Limit, Wartung), bleiben die zuletzt bekannten Daten erhalten.
 
 ### 11.1 API-Key besorgen
 
@@ -334,7 +343,7 @@ Faustregel: Bei 60 Minuten Mindestabstand reicht das kostenlose Kontingent für 
 
 ### 11.4 Ohne API-Key
 
-Ohne API-Key zeigt die Seite *Anbieter* bei DHL „Nur E-Mail (Zugangsdaten fehlen)“. DHL-Sendungen werden dann nur über Mails aktualisiert. Das ist kein Fehler.
+Ohne API-Key zeigt die Seite *Anbieter* bei DHL „Nur E-Mail (Zugangsdaten fehlen)“ bzw. – bei ausgeschaltetem E-Mail-Eingang – „Keine Datenquelle“. DHL-Sendungen werden dann nur über Mails aktualisiert.
 
 ---
 
@@ -480,7 +489,8 @@ Alle Topics beginnen mit dem Basis-Topic (Standard `pakettracker`).
 | `pakettracker/summary/exception` | davon mit Problem | `0` |
 | `pakettracker/summary/delivered_today` | heute zugestellt | `2` |
 | `pakettracker/summary/arriving_today` | aktive Sendungen mit Termin heute | `1` |
-| `pakettracker/summary/next_eta` | nächster Zustelltermin (JJJJ-MM-TT, leer wenn unbekannt) | `2026-10-05` |
+| `pakettracker/summary/next_eta` | nächster Zustelltermin ab heute (JJJJ-MM-TT, leer wenn unbekannt) | `2026-10-05` |
+| `pakettracker/summary/stale` | abgelaufene Sendungen (Termin verstrichen, keine neue Info – nicht in `active` enthalten) | `1` |
 
 ### 18.2 Slots (feste Plätze für Loxone)
 
@@ -491,15 +501,16 @@ Loxone kann keine wechselnden Listen verarbeiten. Deshalb stehen die wichtigsten
 | `pakettracker/slot/1/used` | 1 = belegt, 0 = leer | `1` |
 | `pakettracker/slot/1/status_code` | Statuscode 0–7 | `3` |
 | `pakettracker/slot/1/status_label` | Status als Text | `In Zustellung` |
-| `pakettracker/slot/1/status_text` | Originaltext des Paketdienstes | `Die Sendung wurde in das Zustellfahrzeug geladen.` |
+| `pakettracker/slot/1/status_text` | Text des Paketdienstes; „heute/morgen“ wird bei jedem Lauf neu berechnet | `Die Sendung wurde in das Zustellfahrzeug geladen.` |
 | `pakettracker/slot/1/description` | Beschreibung | `USB-C Kabel 2m` |
 | `pakettracker/slot/1/eta` | Termin (JJJJ-MM-TT) | `2026-10-02` |
 | `pakettracker/slot/1/eta_window` | Zustellzeitfenster (Ortszeit), leer wenn unbekannt – derzeit von Hermes (Live-Abfrage), DHL und UPS | `10:00–14:00` |
+| `pakettracker/slot/1/eta_text` | Termin als Text, bei jedem Lauf neu: `kommt heute`, `kommt morgen`, `kommt am Fr 09.10.`, bei verspäteten Live-Sendungen `verspätet – ursprünglicher Termin 01.10.`; leer ohne Termin | `kommt heute` |
 | `pakettracker/slot/1/provider` | Paketdienst | `dhl` |
 | `pakettracker/slot/1/tracking_number` | Sendungsnummer | `00340434…` |
 | `pakettracker/slot/1/status` | Status als Schlüsselwort | `out_for_delivery` |
 
-Dasselbe gilt für `slot/2`, `slot/3` usw. Leere Slots haben `used` = 0, `status_code` = 0 und leere Texte.
+Dasselbe gilt für `slot/2`, `slot/3` usw. Leere Slots haben `used` = 0, `status_code` = 0 und leere Texte. Wird eine Sendung entfernt oder läuft sie ab, rückt die nächste Sendung nach; ein frei gewordener Slot wird bei jedem Lauf mit `used` = 0 und leeren Texten überschrieben – in Loxone bleibt kein alter Text stehen.
 
 ### 18.3 Je Paketdienst
 
@@ -507,7 +518,7 @@ Dasselbe gilt für `slot/2`, `slot/3` usw. Leere Slots haben `used` = 0, `status
 
 | Topic | Inhalt |
 |---|---|
-| `pakettracker/provider/<id>/active` | aktive Sendungen dieses Paketdienstes |
+| `pakettracker/provider/<id>/active` | aktive Sendungen dieses Paketdienstes (ohne abgelaufene) |
 | `pakettracker/provider/<id>/shipment_count` | alle Sendungen dieses Paketdienstes in der Liste (inkl. heute zugestellt) |
 | `pakettracker/provider/<id>/error` | aktueller Fehlertext; **leer = alles in Ordnung** (leer wird nicht gespeichert, siehe oben) |
 | `pakettracker/provider/<id>/last_success` | Zeitpunkt des letzten erfolgreichen Abrufs (ISO-Format, UTC) |

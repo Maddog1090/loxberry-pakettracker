@@ -4,6 +4,26 @@ Alle nennenswerten Änderungen am Plugin. Format nach [Keep a Changelog](https:/
 
 > Die Versionen bis einschließlich 0.2.2 entstanden am 2026-10-02 während der Entwicklung und wurden nicht öffentlich veröffentlicht. Die Datumsangaben sind die Build-Daten. 0.2.2 ist die erste zur Veröffentlichung vorgesehene Version.
 
+## [1.0.1] – 2026-10-03
+
+### Behoben
+- Veraltete Liefertermine: „kommt heute“ aus einer alten Mail wurde dauerhaft übernommen (z.B. Amazon-Sendung mit Termin 01.10. am 03.10. noch „In Zustellung – kommt heute“). Relative Angaben (heute/morgen/übermorgen) in Statustexten werden jetzt bei jedem Lauf bezogen auf den Tag der Statusinformation neu berechnet; liegt der gemeinte Tag in der Vergangenheit, entfällt die Angabe. Gespeichert wird weiterhin der Originaltext (`status_text_raw` in state.json).
+- Eine später eingegangene Mailprognose konnte den Status einer live abgefragten Sendung überschreiben und blockierte danach alle weiteren API-Ergebnisse (deren Ereigniszeit älter war). Das Ergebnis einer Live-Abfrage hat jetzt immer Vorrang; Mails ergänzen bei aktuellem Live-Tracking (letzte erfolgreiche Abfrage höchstens 48 h alt) nur noch Beschreibung, Referenz und Herkunft.
+- Tagesvergleiche (heute, zugestellt heute, Mail-Bezugstag, Zustellzeitfenster, Tageskontingent) rechnen ausdrücklich in Europe/Berlin statt in der Systemzeitzone.
+
+### Hinzugefügt
+- **Abgelaufene Sendungen (stale):** Termin verstrichen, seitdem keine neue Statusinformation und kein aktuelles Live-Tracking → die Sendung gilt nicht mehr als aktiv. Sie erscheint nicht mehr in den Slots (MQTT/REST), in `summary/active`, den Status-Zählern, `arriving_today`, `next_eta` und `provider/<id>/active`, bleibt aber bis `max_age_days` gespeichert und in der Oberfläche unter *Sendungen → Abgelaufene Sendungen* sichtbar. Abholbereite Sendungen laufen nicht ab. Neue Mail oder Live-Status → wieder aktiv.
+- Neue Felder (zusätzlich, bestehende unverändert): `slot/<n>/eta_text` und `eta_text` je Sendung („kommt heute“, „kommt morgen“, „kommt am Fr 09.10.“, bei verspäteten Live-Sendungen „verspätet – ursprünglicher Termin 01.10.“), `summary/stale`, je Sendung `stale` und `live_checked`, je Anbieter `live`, `live_last_success`, `live_error`.
+- Anbieter-Seite: Abschnitt **Live-Abfrage** je Paketdienst (aktiv/inaktiv, letzte erfolgreiche Abfrage, Fehler, Hinweis bei fehlenden Zugangsdaten).
+- DHL: Zustellversuch/nicht angetroffen → Problem, Packstation/Filiale zur Abholung → abholbereit, Rücksendung → Rücksendung (aus dem Statustext der Unified API).
+- Neues Plugin-Symbol.
+- Tests für Datums-/Stale-Logik, Zeitzone und Tageswechsel (Sommer-/Winterzeit), DHL ohne IMAP, Fehlerfälle und das Leeren von MQTT-Slots.
+
+### Geändert
+- Datenquelle je Anbieter zeigt die tatsächlich genutzte Quelle: DHL mit API-Key und ausgeschaltetem E-Mail-Eingang → „API“ (vorher immer „API + E-Mail“); ohne Zugangsdaten und ohne E-Mail → „keine“.
+- `summary/next_eta` berücksichtigt nur Termine ab heute.
+- Hinweis bei fehlendem API-Key lautet „keine Live-Abfrage (nur E-Mail, falls eingerichtet)“.
+
 ## [1.0.0] – 2026-10-02
 
 Erste stabile Version: MQTT-Topics, Status-Codes 0–7 und REST-Felder gelten ab jetzt als feste Schnittstelle.

@@ -169,11 +169,11 @@ function pt_label(array $L, string $key, string $fallback = ''): string
     return $L[$key] ?? ($fallback !== '' ? $fallback : $key);
 }
 
-function pt_health_badge(string $health, array $L): string
+function pt_health_badge(string $health, array $L, string $text = ''): string
 {
     $class = ['ok' => 'ok', 'error' => 'error', 'email_only' => 'warn', 'no_source' => 'warn'][$health] ?? 'idle';
     return '<span class="pt-health pt-health-' . $class . '">'
-        . pt_h(pt_label($L, 'HEALTH.' . strtoupper($health), $health)) . '</span>';
+        . pt_h($text !== '' ? $text : pt_label($L, 'HEALTH.' . strtoupper($health), $health)) . '</span>';
 }
 
 function pt_describe(): array

@@ -27,7 +27,7 @@ $email = $state['email'] ?? [];
         <tr>
             <td><strong><?= pt_h($section['title']) ?></strong></td>
             <td><?= pt_h($enabled ? $L['COMMON.YES'] : $L['COMMON.NO']) ?></td>
-            <td><?= pt_h(pt_label($L, 'SOURCE.' . strtoupper(str_replace('+', '_', $section['data_source'])))) ?></td>
+            <td><?= pt_h(pt_label($L, 'SOURCE.' . strtoupper(str_replace('+', '_', $enabled && !empty($p['source']) ? $p['source'] : $section['data_source'])))) ?></td>
             <td><?= pt_h(pt_label($L, 'CRED.' . strtoupper($cred))) ?></td>
             <td><?= $enabled ? pt_health_badge((string)($p['health'] ?? 'idle'), $L) : pt_health_badge('disabled', $L) ?></td>
             <td><?= pt_h(pt_fmt_time($p['last_success'] ?? '')) ?></td>
@@ -46,6 +46,36 @@ $email = $state['email'] ?? [];
     <?php endforeach; ?>
 </table>
 <p class="pt-hint"><?= pt_h($L['PROVIDERS.COUNT_HINT']) ?></p>
+
+<h3><?= pt_h($L['PROVIDERS.LIVE_HEADING']) ?></h3>
+<table class="pt-table">
+    <?php foreach (pt_providers($describe) as $id => $section):
+        if (empty($section['live_tracking']) || empty($describe['values'][$section['id']]['enabled'])) {
+            continue;
+        }
+        $p = $info[$id] ?? [];
+        $cred = pt_credentials_status($section, $describe);
+        $values = $describe['values'][$section['id']];
+        // Vor dem ersten Lauf: aus den Einstellungen ableiten (Hermes: Live-Abfrage abschaltbar)
+        $live = $cred !== 'missing' && (array_key_exists('live', $p) ? !empty($p['live'])
+                : (!array_key_exists('live_lookup', $values) || !empty($values['live_lookup']))); ?>
+        <tr>
+            <td><strong><?= pt_h(sprintf($L['PROVIDERS.LIVE_LABEL'], $section['title'])) ?></strong></td>
+            <td><?= $live ? pt_health_badge('ok', $L, $L['PROVIDERS.LIVE_ON']) : pt_health_badge('no_source', $L, $L['PROVIDERS.LIVE_OFF']) ?></td>
+            <td>
+                <?php if ($cred === 'missing'): ?>
+                    <?= pt_h(sprintf($L['PROVIDERS.LIVE_NO_KEY'], $section['title'])) ?>
+                <?php elseif (!$live): ?>
+                    <?= pt_h($L['PROVIDERS.LIVE_DISABLED']) ?>
+                <?php else: ?>
+                    <?= pt_h($L['PROVIDERS.LIVE_LAST']) ?>: <strong><?= pt_h(pt_fmt_time($p['live_last_success'] ?? '')) ?></strong>
+                    <?php if (!empty($p['live_error'])): ?><br><span class="pt-error-text"><?= pt_h($p['live_error']) ?></span><?php endif; ?>
+                <?php endif; ?>
+            </td>
+        </tr>
+    <?php endforeach; ?>
+</table>
+<p class="pt-hint"><?= pt_h($L['PROVIDERS.LIVE_HINT']) ?></p>
 
 <h3><?= pt_h($L['PROVIDERS.EMAIL_HEADING']) ?></h3>
 <?php if (empty($describe['values']['email']['enabled'])): ?>

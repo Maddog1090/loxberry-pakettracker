@@ -1,6 +1,7 @@
 """Ende-zu-Ende: alle Anbieter über E-Mail, Duplikate, Gesundheit, MQTT-Topics, MQTT-Ausfall."""
 import json
 import shutil
+from datetime import date
 import sys
 import types
 
@@ -25,7 +26,8 @@ def _state(paths):
 
 def test_all_carriers_from_mails(plugin_root):
     cfg = _cfg(plugin_root, FIXTURES)
-    assert engine.run(plugin_root, cfg, force=True) == 0
+    # Stichtag der Testmails: Hermes meldet am 02.10. „heute in Zustellung“
+    assert engine.run(plugin_root, cfg, force=True, today=date(2026, 10, 2)) == 0
     state = _state(plugin_root)
     ids = sorted(s["id"] for s in state["shipments"])
     assert ids == sorted([

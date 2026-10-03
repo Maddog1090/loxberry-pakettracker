@@ -17,7 +17,7 @@ from abc import ABC
 from datetime import date, timedelta
 from typing import ClassVar
 
-from ..models import Shipment, Status, now_iso, parse_ts
+from ..models import Shipment, Status, local_now, local_today, now_iso, parse_ts
 from ..schema import Field, Section
 from ..sources.mail import Mail
 
@@ -254,18 +254,18 @@ def extract_eta(text: str, reference: date) -> str:
 
 
 def local_window(start: str, end: str) -> tuple[str, str]:
-    """Zeitfenster aus zwei ISO-Zeitstempeln → (Datum, "HH:MM–HH:MM") in Ortszeit des LoxBerry.
+    """Zeitfenster aus zwei ISO-Zeitstempeln → (Datum, "HH:MM–HH:MM") in Ortszeit (Europe/Berlin).
 
     Ohne gültigen Beginn: ("", ""). Ohne gültiges Ende oder über Mitternacht: nur das Datum.
     """
     begin, finish = parse_ts(start), parse_ts(end)
     if begin is None:
         return "", ""
-    begin = begin.astimezone()
+    begin = local_now(begin)
     day = begin.date().isoformat()
-    if finish is None or finish.astimezone().date() != begin.date() or finish <= begin:
+    if finish is None or local_now(finish).date() != begin.date() or finish <= begin:
         return day, ""
-    return day, f"{begin:%H:%M}–{finish.astimezone():%H:%M}"
+    return day, f"{begin:%H:%M}–{local_now(finish):%H:%M}"
 
 
 _MOCK_FLOW = (Status.ANNOUNCED, Status.IN_TRANSIT, Status.OUT_FOR_DELIVERY, Status.PICKUP_READY, Status.DELIVERED)
@@ -281,6 +281,6 @@ def mock_shipment(provider_id: str, tracking_number: str) -> Shipment:
         tracking_number=tracking_number,
         status=status,
         status_text=f"[Testmodus] {status.label}",
-        eta=(date.today() + timedelta(days=days)).isoformat(),
+        eta=(local_today() + timedelta(days=days)).isoformat(),
         last_update=now_iso(),
     )

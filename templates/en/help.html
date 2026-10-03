@@ -1,5 +1,5 @@
 <p><b>Pakettracker</b> collects shipments from DHL, Amazon, Hermes, DPD, GLS and UPS and provides them to Loxone via MQTT and HTTP. Detailed guide: the plugin README.</p>
-<p><b>Data sources:</b> DHL and UPS via their official APIs (credentials required) plus e-mails; Amazon, Hermes, DPD and GLS only via their notification e-mails (e-mail input required).</p>
+<p><b>Data sources:</b> DHL and UPS via their official APIs (credentials required) plus e-mails; Amazon, Hermes, DPD and GLS only via their notification e-mails (e-mail input required). DHL also works <b>without</b> the e-mail input for manually entered tracking numbers. Shipments whose expected date has passed without news (and without live tracking) are no longer shown as active.</p>
 <ol>
     <li><b>Test mode</b> (Settings → General): while active, no carrier is queried – ideal to set up MQTT and Loxone.</li>
     <li><b>E-mail input</b> (Settings): enter IMAP server, port, encryption, user, (app) password, folders → "Save &amp; test IMAP connection". Mails are only read, never deleted.</li>
